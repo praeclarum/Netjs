@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -34,11 +34,11 @@
     <Compile Include="TsOutputVisitor.cs" />
     <Compile Include="CsToTs.cs" />
   </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
-    <ProjectReference Include="..\..\Netjs\Dependencies\NRefactory\NRefactory.csproj">
-      <Project>{0709E65F-6943-4A75-9248-3DDBA94E3D5F}</Project>
+    <ProjectReference Include="..\Dependencies\NRefactory\NRefactory.csproj">
+      <Project>{0709e65f-6943-4a75-9248-3ddba94e3d5f}</Project>
       <Name>NRefactory</Name>
     </ProjectReference>
   </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
 </Project>

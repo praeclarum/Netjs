@@ -71,7 +71,7 @@ namespace Netjs
 				throw new Exception ("No assembly specified.");
 			}
 
-			var asmPath = config.MainAssembly;
+			var asmPath = Path.GetFullPath (config.MainAssembly);
 			asmDir = Path.GetDirectoryName (asmPath);
 			var outPath = Path.ChangeExtension (asmPath, ".ts");
 
