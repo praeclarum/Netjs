@@ -329,6 +329,11 @@ class DateTime extends NObject
 		throw new NotImplementedException ();
 	}
 
+	static get Now(): DateTime
+	{
+		throw new NotImplementedException ();
+	}
+
 	static op_Subtraction(endTime: DateTime, startTime: DateTime): TimeSpan
 	{
 		throw new NotImplementedException ();
@@ -337,6 +342,10 @@ class DateTime extends NObject
 
 class TimeSpan extends NObject
 {
+	get TotalDays(): number
+	{
+		throw new NotImplementedException ();	
+	}
 	get Days(): number
 	{
 		throw new NotImplementedException ();	

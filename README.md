@@ -1,6 +1,8 @@
 # Netjs
 
-Netjs is a .NET to JavaScript compiler.
+Netjs is a .NET to TypeScript and JavaScript compiler.
+
+<img src="Images/Explanation.png" />
 
 ## Installation
 
