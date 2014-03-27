@@ -140,7 +140,7 @@ class NChar
 {
 	static IsWhiteSpace(ch: number): boolean
 	{
-		throw new NotImplementedException();
+		return ch === 32 || (ch >= 9 && ch <= 13) || ch === 133 || ch === 160;
 	}
 	static IsLetter(ch: number): boolean
 	{
@@ -342,6 +342,13 @@ class DateTime extends NObject
 
 class TimeSpan extends NObject
 {
+	private ticks: number;
+
+	constructor(ticks: number)
+	{
+		super();
+		this.ticks = ticks;
+	}
 	get TotalDays(): number
 	{
 		throw new NotImplementedException ();	
@@ -364,7 +371,7 @@ class TimeSpan extends NObject
 	}
 	static FromSeconds(seconds: number): TimeSpan
 	{
-		throw new NotImplementedException ();
+		return new TimeSpan (seconds * 100e9);
 	}
 	static FromDays(days: number): TimeSpan
 	{
@@ -529,20 +536,33 @@ interface IList<T>
 
 class List<T> extends NObject implements IList<T>, IEnumerable<T>
 {
-	private array: T[];
+	private array: T[] = new Array<T> ();
 
-	constructor()
-	constructor(capactiy: number)
-	constructor(items: IEnumerable<T>)
+	constructor();
+	constructor(capactiy: number);
+	constructor(items: IEnumerable<T>);
 	constructor(itemsOrCapacity?: any)
 	{
 		super();
-		throw new NotImplementedException ();
+		if (typeof itemsOrCapacity !== "undefined" && itemsOrCapacity.constructor == Number) {
+			// We don't care
+		}
+		else if (itemsOrCapacity) {
+			this.AddRange (itemsOrCapacity);
+		}
 	}
 
-	Add (value: T)
+	Add (item: T)
 	{
-		this.array.push(value);
+		this.array.push(item);
+	}
+
+	AddRange (items: IEnumerable<T>)
+	{
+		var e = items.GetEnumerator ();
+		while (e.MoveNext) {
+			this.Add (e.Current);
+		}
 	}
 
 	get Count(): number
@@ -586,13 +606,6 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	}
 
 	ToArray(): T[]
-	{
-		throw new NotImplementedException ();
-	}
-
-	AddRange(items: T[]): void
-	AddRange(items: IEnumerable<T>): void
-	AddRange(items: any): void
 	{
 		throw new NotImplementedException ();
 	}
