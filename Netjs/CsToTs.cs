@@ -42,6 +42,7 @@ namespace Netjs
 			yield return new FixGenericsThatUseObject ();
 			yield return new RemoveNonGenericEnumerable ();
 			yield return new RemovePrivateInterfaceOverloads ();
+			yield return new AvoidTrickyJsKeywords ();
 			yield return new AddAbstractMethodBodies ();
 			yield return new MergeCtors ();
 			yield return new EnsureAtLeastOneCtor ();
@@ -80,6 +81,61 @@ namespace Netjs
 			yield return new MakeWhileLoop ();
 			yield return new GotoRemoval ();
 			yield return new AddReferences ();
+		}
+
+		class AvoidTrickyJsKeywords : DepthFirstAstVisitor, IAstTransform
+		{
+			readonly HashSet<string> keywords = new HashSet<string> {
+				"arguments",
+			};
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+			public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
+			{
+				base.VisitMethodDeclaration (methodDeclaration);
+
+				var badPs = methodDeclaration.Parameters.Where (x => keywords.Contains (x.Name)).ToList ();
+				if (badPs.Count == 0)
+					return;
+
+				foreach (var bp in badPs) {
+					var oldName = bp.Name;
+					var newName = "_" + oldName;
+					bp.Name = newName;
+					foreach (var i in methodDeclaration.Body.Descendants.OfType<IdentifierExpression> ()) {
+						if (i.Identifier == oldName) {
+							i.Identifier = newName;
+						}
+					}
+				}
+			}
+			public override void VisitConstructorDeclaration (ConstructorDeclaration constructorDeclaration)
+			{
+				base.VisitConstructorDeclaration (constructorDeclaration);
+
+				var badPs = constructorDeclaration.Parameters.Where (x => keywords.Contains (x.Name)).ToList ();
+				if (badPs.Count == 0)
+					return;
+
+				foreach (var bp in badPs) {
+					var oldName = bp.Name;
+					var newName = "_" + oldName;
+					bp.Name = newName;
+					foreach (var i in constructorDeclaration.Body.Descendants.OfType<IdentifierExpression> ()) {
+						if (i.Identifier == oldName) {
+							i.Identifier = newName;
+						}
+					}
+					foreach (var i in constructorDeclaration.Initializer.Descendants.OfType<IdentifierExpression> ()) {
+						if (i.Identifier == oldName) {
+							i.Identifier = newName;
+						}
+					}
+
+				}
+			}
 		}
 
 		class MakeWhileLoop : DepthFirstAstVisitor, IAstTransform
@@ -654,19 +710,12 @@ namespace Netjs
 			static Tuple<LabelStatement, List<AstNode>> LabelIsSmallInlineable (LabelStatement label)
 			{
 				var safes = new List<AstNode> ();
-
 				var s = label.NextSibling;
-				do {
-					if (StatementIsBranch (s)) {
-						safes.Add (s);
-						return Tuple.Create (label, safes);
-					} else {
-						safes.Clear ();
-						return Tuple.Create (label, safes);
-					}
-				} while (s != null && !s.IsNull);
-
-				safes.Clear ();
+				if (StatementIsBranch (s)) {
+					safes.Add (s);
+				} else {
+					safes.Clear ();
+				}
 				return Tuple.Create (label, safes);
 			}
 

@@ -435,7 +435,9 @@ namespace Netjs
 			"public", "return",
 			"static", "string", "switch", "this", "throw",
 			"true", "try", "typeof",
-			"using", "void", "while"
+			"using", "void", "while",
+			// closure thinks these are reserved
+			"int", "expression",
 		};
 		static readonly HashSet<string> queryKeywords = new HashSet<string> {
 		};
