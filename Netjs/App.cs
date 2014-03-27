@@ -52,9 +52,7 @@ namespace Netjs
 				new App ().Run (config);
 				return 0;
 			} catch (Exception ex) {
-				Console.ForegroundColor = ConsoleColor.Red;
-				Console.WriteLine (ex);
-				Console.ResetColor ();
+				Error ("{0}", ex);
 				return 1;
 			}
 		}
@@ -75,7 +73,7 @@ namespace Netjs
 			asmDir = Path.GetDirectoryName (asmPath);
 			var outPath = Path.ChangeExtension (asmPath, ".ts");
 
-			Console.WriteLine ("Reading IL");
+			Step ("Reading IL");
 			var parameters = new ReaderParameters {
 				AssemblyResolver = this,
 			};
@@ -84,7 +82,7 @@ namespace Netjs
 			system = AssemblyDefinition.ReadAssembly (typeof(INotifyPropertyChanged).Assembly.Location, parameters);
 			systemCore = AssemblyDefinition.ReadAssembly (typeof(Enumerable).Assembly.Location, parameters);
 
-			Console.WriteLine ("Decompiling IL to C#");
+			Step ("Decompiling IL to C#");
 			var context = new DecompilerContext (asm.MainModule);
 			context.Settings.ForEachStatement = false;
 			context.Settings.ObjectOrCollectionInitializers = false;
@@ -105,16 +103,42 @@ namespace Netjs
 			}
 			builder.RunTransformations ();
 
-			Console.WriteLine ("Translating C# to TypeScript");
+			Step ("Translating C# to TypeScript");
 			new CsToTs ().Run (builder.SyntaxTree);
 
-			Console.WriteLine ("Writing");
+			Step ("Writing");
 			using (var outputWriter = new StreamWriter (outPath)) {
 				var output = new PlainTextOutput (outputWriter);
 				builder.GenerateCode (output, (s, e) => new TsOutputVisitor (s, e));
 			}
 
-			Console.WriteLine ("Done");
+			Step ("Done");
+		}
+
+		public static void Step (string message)
+		{
+			Console.ForegroundColor = ConsoleColor.Cyan;
+			Console.WriteLine (message);
+			Console.ResetColor ();
+		}
+
+		public static void Warning (string format, params object[] args)
+		{
+			Console.ForegroundColor = ConsoleColor.Yellow;
+			Console.WriteLine (format, args);
+			Console.ResetColor ();
+		}
+
+		public static void Error (string format, params object[] args)
+		{
+			Console.ForegroundColor = ConsoleColor.Red;
+			Console.WriteLine (format, args);
+			Console.ResetColor ();
+		}
+
+		public static void Info (string format, params object[] args)
+		{
+			Console.WriteLine (format, args);
 		}
 			
 		#region IAssemblyResolver implementation
@@ -148,11 +172,11 @@ namespace Netjs
 						asm = parameters != null ? 
 							AssemblyDefinition.ReadAssembly (fn, parameters) : 
 							AssemblyDefinition.ReadAssembly (fn);
-						Console.WriteLine ("  Loaded " + fn);
+						Info ("  Loaded {0}", fn);
 					}
 					else {
 						asm = null;
-						Console.WriteLine ("  Could not find assembly " + name);
+						Error ("  Could not find assembly {0}", name);
 					}
 					referencedAssemblies [n] = asm;
 				}

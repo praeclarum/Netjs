@@ -162,8 +162,9 @@ namespace Netjs
 			readonly IAstVisitor[][] transforms = {
 				new IAstVisitor[] { },
 				new IAstVisitor[] { new LiftLabeledSwitchSections () },
-				new IAstVisitor[] { new LiftLabeledSwitchSections (), new InlineGoto () },
-				new IAstVisitor[] { new AddImplicitGoto (), new InlineGoto () },
+				new IAstVisitor[] { new LiftLabeledSwitchSections (), new SmallInlineGoto () },
+				new IAstVisitor[] { new LiftLabeledSwitchSections (), new SmallInlineGoto (), new BigInlineGoto () },
+				new IAstVisitor[] { new AddImplicitGoto (), new SmallInlineGoto () },
 			};
 
 			public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
@@ -190,10 +191,9 @@ namespace Netjs
 						m.AcceptVisitor (new SwitchSectionBlocksToStatements ());
 						foreach (var t in ts) {
 							m.AcceptVisitor (t);
+							m.AcceptVisitor (new RemoveRedundantGotos ());
 						}
-						m.AcceptVisitor (new RemoveRedundantGotos ());
 						m.AcceptVisitor (new RemoveUnreachableStatements ());
-						m.AcceptVisitor (new RemoveRedundantGotos ()); // again :-(
 						m.AcceptVisitor (new RemoveLabelsWithoutGotos ());
 
 						if (!HasBadLabels (m)) {
@@ -202,7 +202,9 @@ namespace Netjs
 					}
 
 					if (HasBadLabels (m)) {
-						Console.WriteLine ("There are goto labels without the same parent. This is not supported.");
+						App.Warning ("! GOTO labels at different levels in {0}.{1}(). This is not supported.", 
+							methodDeclaration.GetParent<TypeDeclaration> ().Name, 
+							methodDeclaration.Name);
 						return;
 					} else {
 						methodDeclaration.ReplaceWith (m);
@@ -335,6 +337,8 @@ namespace Netjs
 			static bool HasBadLabels (MethodDeclaration methodDeclaration)
 			{
 				var labels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Where (HasGoto).ToList ();
+				if (labels.Count == 0)
+					return false;
 				var labelsParent = labels [0].Parent;
 				return labels.Any (x => x.Parent != labelsParent);
 			}
@@ -436,21 +440,19 @@ namespace Netjs
 					if (switchStatement.SwitchSections.Count == 0)
 						return;
 
-					var last = switchStatement.SwitchSections.Last ();
-					if (last.Statements.Count != 1)
-						return;
-
-
 					var trailingLabel = switchStatement.NextSibling as LabelStatement;
 					if (trailingLabel == null)
 						return;
 
+					foreach (var s in switchStatement.SwitchSections) {
 
-					if (last.Statements.Count == 1 && last.Statements.First () is GotoStatement
-						&& ((GotoStatement)last.Statements.First ()).Label == trailingLabel.Label) {
 
-						last.Remove ();
+						if (s.Statements.Count == 1 && s.Statements.First () is GotoStatement
+							&& ((GotoStatement)s.Statements.First ()).Label == trailingLabel.Label) {
 
+							s.Statements.First ().ReplaceWith (new BreakStatement ());
+
+						}
 					}
 				}
 
@@ -552,13 +554,40 @@ namespace Netjs
 				return l;
 			}
 
-			class InlineGoto : DepthFirstAstVisitor
+			class BigInlineGoto : DepthFirstAstVisitor
 			{
 				public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
 				{
 					base.VisitMethodDeclaration (methodDeclaration);
 
-					var inlabels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Select (LabelIsInlineable).Where (x => x.Item2.Count > 0).ToList ();
+					var inlabels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Select (LabelIsBigInlineable).Where (x => x.Item2.Count > 0).ToList ();
+
+					if (inlabels.Count == 0)
+						return;
+
+					foreach (var l in inlabels) {
+						var labelName = l.Item1.Label;
+						foreach (var g in methodDeclaration.Body.Descendants.OfType<GotoStatement> ().Where (x => x.Label == labelName)) {
+
+							foreach (var n in l.Item2) {
+								g.Parent.InsertChildBefore (g, (Statement)n.Clone (), (Role<Statement>)g.Role);
+							}
+
+							g.Remove ();
+						}
+
+						l.Item1.Remove ();
+					}
+				}
+			}
+
+			class SmallInlineGoto : DepthFirstAstVisitor
+			{
+				public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
+				{
+					base.VisitMethodDeclaration (methodDeclaration);
+
+					var inlabels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Select (LabelIsSmallInlineable).Where (x => x.Item2.Count > 0).ToList ();
 
 					if (inlabels.Count == 0)
 						return;
@@ -600,7 +629,7 @@ namespace Netjs
 				return safes;
 			}
 
-			static Tuple<LabelStatement, List<AstNode>> LabelIsInlineable (LabelStatement label)
+			static Tuple<LabelStatement, List<AstNode>> LabelIsBigInlineable (LabelStatement label)
 			{
 				var safes = new List<AstNode> ();
 
@@ -612,6 +641,25 @@ namespace Netjs
 					} else if (StatementIsSafe (s)) {
 						safes.Add (s);
 						s = s.NextSibling;
+					} else {
+						safes.Clear ();
+						return Tuple.Create (label, safes);
+					}
+				} while (s != null && !s.IsNull);
+
+				safes.Clear ();
+				return Tuple.Create (label, safes);
+			}
+
+			static Tuple<LabelStatement, List<AstNode>> LabelIsSmallInlineable (LabelStatement label)
+			{
+				var safes = new List<AstNode> ();
+
+				var s = label.NextSibling;
+				do {
+					if (StatementIsBranch (s)) {
+						safes.Add (s);
+						return Tuple.Create (label, safes);
 					} else {
 						safes.Clear ();
 						return Tuple.Create (label, safes);

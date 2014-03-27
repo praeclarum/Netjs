@@ -15,6 +15,7 @@
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug</OutputPath>
     <WarningLevel>4</WarningLevel>
+    <DebugSymbols>true</DebugSymbols>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <Optimize>true</Optimize>
@@ -36,7 +37,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Dependencies\NRefactory\NRefactory.csproj">
-      <Project>{0709e65f-6943-4a75-9248-3ddba94e3d5f}</Project>
+      <Project>{0709E65F-6943-4A75-9248-3DDBA94E3D5F}</Project>
       <Name>NRefactory</Name>
     </ProjectReference>
   </ItemGroup>
