@@ -80,7 +80,204 @@ namespace Netjs
 			yield return new RemoveEmptySwitch ();
 			yield return new MakeWhileLoop ();
 			yield return new GotoRemoval ();
+			yield return new OrderClasses ();
 			yield return new AddReferences ();
+		}
+
+		class OrderClasses : IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				var types = compilationUnit.Descendants.OfType<TypeDeclaration> ().ToList ();
+				if (types.Count == 0)
+					return;
+
+				var needsMore = true;
+				while (needsMore) {
+					needsMore = false;
+					for (int i = 0; i < types.Count; i++) {
+						var t = types [i];
+						if (t.BaseTypes.Count == 0)
+							continue;
+
+						for (int j = i+1; j < types.Count; j++) {
+							var u = types [j];
+
+							if (UsesType (t, u)) {
+
+								//
+								// Need to move it to before t
+								//
+								types.RemoveAt (j);
+								types.Insert (i, u);
+
+								needsMore = true;
+								break;
+							}
+						}
+
+						if (needsMore)
+							break;
+					}
+				}
+
+				var role = types [0].Role;
+				var parent = types [0].Parent;
+
+				foreach (var t in types) {
+					t.Remove ();
+					parent.AddChild ((AstNode)t, (Role<AstNode>)role);
+				}
+			}
+
+			bool UsesType (TypeDeclaration t, TypeDeclaration u)
+			{
+				TI refTypes = null;
+				if (!refs.TryGetValue (t.Name, out refTypes)) {
+					refTypes = new TI (t);
+					refs [t.Name] = refTypes;
+				}
+				return refTypes.UsesType (u);
+			}
+
+			Dictionary<string, TI> refs = new Dictionary<string, TI> ();
+
+			class TI
+			{
+				readonly HashSet<string> ReferencedTypes = new HashSet<string> ();
+
+				readonly AstNode parent;
+
+				public TI (TypeDeclaration type)
+				{
+					parent = type.Parent;
+
+					foreach (var bt in type.BaseTypes) {
+						AddType (bt);
+					}
+
+					foreach (var i in type.Members.OfType<FieldDeclaration> ()
+						.Where (x => x.HasModifier (Modifiers.Static))
+						.SelectMany (x => x.Variables, (x,y) => y.Initializer)
+						.Where (x => !x.IsNull)) {
+
+						AddExpression (i);
+					}
+				}
+
+				void AddExpression (AstNode expr)
+				{
+					//
+					// Looks for static methods
+					//
+					foreach (var t in from x in expr.DescendantsAndSelf.OfType<InvocationExpression> ()
+						let mr = x.Target as MemberReferenceExpression
+						where mr != null
+						select mr) {
+
+						var th = t.Target as ThisReferenceExpression;
+						if (th != null) {
+							var ty = th.GetParent<TypeDeclaration> ();
+
+							var memName = t.MemberName;
+							foreach (var m in ty.Members.Where (x => x.Name == memName)) {
+								AddExpression (m);
+							}
+						}
+
+						var tr = t.Target as TypeReferenceExpression;
+						if (tr != null) {
+
+							var tname = t.MemberName;
+							AddType (tr.Type);
+							var rname = GetTypeName (tr.Type);
+							if (!string.IsNullOrEmpty (rname)) {
+								var r = parent.Descendants.OfType<TypeDeclaration> ().FirstOrDefault (x => x.Name == rname);
+								if (r != null) {
+
+									foreach (var m in r.Members.OfType<MethodDeclaration> ().Where (x => x.Name == tname)) {
+										AddExpression (m);
+									}
+
+								}
+							}
+						}
+
+
+					}
+
+
+					//
+					// Look for constructors called
+					//
+					foreach (var t in expr.DescendantsAndSelf.OfType<ObjectCreateExpression> ()) {
+						if (AddType (t.Type)) {
+							var rname = GetTypeName (t.Type);
+							if (!string.IsNullOrEmpty (rname)) {
+								var r = parent.Descendants.OfType<TypeDeclaration> ().FirstOrDefault (x => x.Name == rname);
+								if (r != null) {
+									//
+									// Add the ctor
+									//
+									foreach (var m in r.Members.Where (x => x.Name.StartsWith ("constructor", StringComparison.Ordinal))) {
+										AddExpression (m);
+									}
+
+									//
+									// Add the initialized fields
+									//
+									foreach (var i in r.Members.OfType<FieldDeclaration> ()
+										.Where (x => !x.HasModifier (Modifiers.Static))
+										.SelectMany (x => x.Variables, (x,y) => y.Initializer)
+										.Where (x => !x.IsNull)) {
+
+										AddExpression (i);
+									}
+
+								}
+							}
+						}
+					}
+
+					//
+					// Grab loose ends
+					//
+//					foreach (var t in expr.DescendantsAndSelf.OfType<TypeReferenceExpression> ())
+//						AddType (t.Type);
+				}
+
+				bool AddType (AstType type)
+				{
+					var st = type as SimpleType;
+					if (st != null) {
+						if (!ReferencedTypes.Contains (st.Identifier)) {
+							ReferencedTypes.Add (st.Identifier);
+							return true;
+						}
+					}
+					return false;
+				}
+
+				string GetTypeName (AstType type)
+				{
+					var st = type as SimpleType;
+					if (st != null) {
+						return st.Identifier;
+					}
+					return null;
+				}
+
+				public bool UsesType (TypeDeclaration type)
+				{
+					return ReferencedTypes.Contains (type.Name);
+				}
+			}
+
+			static bool SameType (TypeDeclaration otherType, AstType type)
+			{
+				var st = type as SimpleType;
+				return st != null && st.Identifier == otherType.Name;
+			}
 		}
 
 		class AvoidTrickyJsKeywords : DepthFirstAstVisitor, IAstTransform
@@ -1891,6 +2088,8 @@ namespace Netjs
 					typeDeclaration.ClassType = ClassType.Class;
 				}
 			}
+
+			// TODO: Introduce Clone
 		}
 
 		class IndexersToMethods : DepthFirstAstVisitor, IAstTransform
