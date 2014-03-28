@@ -24,7 +24,11 @@ class NObject
 	}
 	ToString(): string
 	{
-		return this.toString ();
+		return this.GetType ().Name;
+	}
+	toString(): string
+	{
+		return this.ToString ();
 	}
 	GetType(): Type
 	{
@@ -38,35 +42,44 @@ class NObject
 
 class Exception extends NObject
 {
+	private message: string;
 	constructor()
 	constructor(message: string)
 	constructor(message?: string)
 	{
 		super();
+		this.message = message + "";
 	}
-	
+	ToString(): string
+	{
+		return "Exception: " + this.message;
+	}
 }
 
 class NEvent<T>
 {
-	addEventListener(): void
-	{
-	}
+	private listeners: T[] = new Array<T> ();
 
 	Add(listener: T): void
 	{
-		throw new NotImplementedException ();
+		this.listeners.push(listener);
 	}
 
 	Remove(listener: T): void
 	{
-		throw new NotImplementedException ();
+		var index = this.listeners.indexOf(listener);
+		if (index < 0) return;
+		this.listeners.splice(index, 1);
 	}
 
 	ToMulticastFunction(): any
 	{
+		if (this.listeners.length === 0)
+			return null;
 		return function() {
-			throw new NotImplementedException ();
+			for (var i in this.listeners) {
+				this.listeners[i].call (arguments);
+			}
 		};
 	}
 }
@@ -134,6 +147,10 @@ class NBoolean
 	{
 		throw new NotImplementedException;
 	}
+	static GetHashCode(bool: boolean): number
+	{
+		return bool ? 1 : 0;
+	}
 }
 
 class NChar
@@ -166,7 +183,14 @@ class NString
 	static IndexOf (str: string, sub: string, startIndex: number): number
 	static IndexOf (str: string, chOrSub: any, startIndex?: number): number
 	{
-		throw new NotImplementedException ();
+		var sub: string;
+		if (chOrSub.constructor == Number) {
+			sub = String.fromCharCode (chOrSub);
+		}
+		else {
+			sub = chOrSub;
+		}
+		return str.indexOf(sub);
 	}
 	static IndexOfAny (str: string, subs: number[]): number
 	{
@@ -191,9 +215,9 @@ class NString
 	}
 	static Substring(str: string, startIndex: number): string
 	static Substring(str: string, startIndex: number, length: number): string
-	static Substring(str: string, startIndex: number, length?: number): string
+	static Substring(str: string, startIndex: number, length: number = -1): string
 	{
-		throw new NotImplementedException();
+		return length < 0 ? str.substr(startIndex) : str.substr(startIndex, length);
 	}
 	static Remove(str: string, startIndex: number): string
 	static Remove(str: string, startIndex: number, length: number): string
@@ -493,17 +517,26 @@ class CultureInfo extends NObject implements IFormatProvider
 
 class NotImplementedException extends Exception
 {
-
+	constructor(message: string = "Not implemented")
+	{
+		super(message);
+	}
 }
 
 class NotSupportedException extends Exception
 {
-
+	constructor(message: string = "Not supported")
+	{
+		super(message);
+	}
 }
 
 class OverflowException extends Exception
 {
-
+	constructor()
+	{
+		super("Overflow");
+	}
 }
 
 
@@ -560,7 +593,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	AddRange (items: IEnumerable<T>)
 	{
 		var e = items.GetEnumerator ();
-		while (e.MoveNext) {
+		while (e.MoveNext ()) {
 			this.Add (e.Current);
 		}
 	}
@@ -582,7 +615,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	GetEnumerator(): List_Enumerator<T>
 	{
-		throw new NotImplementedException ();
+		return new List_Enumerator<T> (this);
 	}
 
 	RemoveAt(index: number): void
@@ -602,12 +635,12 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	Clear(): void
 	{
-		throw new NotImplementedException ();
+		this.array = new Array<T> ();
 	}
 
 	ToArray(): T[]
 	{
-		throw new NotImplementedException ();
+		return this.array.slice(0);
 	}
 
 	RemoveAll(predicate: (item: T)=>boolean): void
@@ -622,19 +655,27 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	IndexOf(item: T): number
 	{
-		throw new NotImplementedException ();
+		return this.array.indexOf(item);
 	}
 }
 
 class List_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
 {
+	private list: List<T>;
+	private index: number = -1;
+	constructor (list: List<T>)
+	{
+		super();
+		this.list = list;
+	}
 	MoveNext(): boolean
 	{
-		throw new NotImplementedException ();
+		this.index++;
+		return this.index < this.list.Count;
 	}
 	get Current(): T
 	{
-		throw new NotImplementedException ();	
+		return this.list.get_Item(this.index);
 	}
 	Dispose(): void
 	{
@@ -712,8 +753,9 @@ interface IDictionary<K, V>
 }
 
 class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable<KeyValuePair<K, V>>
-{
-	private store = {};
+{	
+	private keys = {};
+	private values = {};
 
 	constructor();
 	constructor(other: IDictionary<K, V>);
@@ -724,38 +766,49 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 
 	get_Item(key: K): V
 	{
-		return <V>this.store[key+""];
+		return <V>this.values[this.GetKeyString (key)];
 	}
 
 	set_Item(key: K, value: V)
 	{
-		this.store[key+""] = value;
+		var ks = this.GetKeyString (key);
+		if (!this.values.hasOwnProperty(ks)) {
+			this.keys[ks] = key;
+		}
+		this.values[ks] = value;
 	}
 
 	Add(key: K, value: V)
 	{
-		if (this.ContainsKey (key)) {
+		var ks = this.GetKeyString (key);
+		if (this.values.hasOwnProperty(ks)) {
 			throw new InvalidOperationException ();
 		}
 		else {
-			this.set_Item(key, value);
+			this.keys[ks] = key;
+			this.values[ks] = value;
 		}
+	}
+
+	private GetKeyString(key: K): string
+	{
+		if (key === null)
+			return "null";
+		if (typeof key === "undefined")
+			return "undefined";
+		return key+"";
 	}
 
 	ContainsKey (key: K): boolean
 	{
-		return this.store.hasOwnProperty(key+"");
-	}
-
-	GetEnumerator(): Dictionary_Enumerator<K,V>
-	{
-		throw new NotImplementedException ();
+		return this.values.hasOwnProperty(this.GetKeyString (key));
 	}
 
 	TryGetValue(key: K, pvalue: V[]): boolean
 	{
-		if (this.ContainsKey (key)) {
-			pvalue[0] = this.store[key+""];
+		var ks = this.GetKeyString (key);
+		if (this.values.hasOwnProperty(ks)) {
+			pvalue[0] = this.values[ks];
 		}
 		else {
 			pvalue[0] = null;
@@ -763,14 +816,29 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		}
 	}
 
+	Remove(key: K): void
+	{
+		throw new NotImplementedException ();
+	}
+
 	Clear(): void
 	{
-		this.store = {};
+		this.values = {};
+		this.keys = {};
 	}
 
 	get Count(): number
 	{
-		throw new NotImplementedException ();	
+		return Object.keys(this.values).length;
+	}
+
+	GetEnumerator(): Dictionary_Enumerator<K,V>
+	{
+		var kvs = new List<KeyValuePair<K,V>>();
+		for (var ks in this.values) {
+			kvs.Add (new KeyValuePair<K,V> (this.keys[ks], this.values[ks]));
+		}
+		return new Dictionary_Enumerator<K,V> (kvs);
 	}
 
 	get Keys(): IEnumerable<K>
@@ -782,25 +850,13 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 	{
 		throw new NotImplementedException ();
 	}
-
-	Remove(key: K): void
-	{
-		throw new NotImplementedException ();
-	}
 }
 
-class Dictionary_Enumerator<K, V> extends NObject implements IEnumerator<KeyValuePair<K,V>>, IDisposable
+class Dictionary_Enumerator<K, V> extends List_Enumerator<KeyValuePair<K,V>>
 {
-	MoveNext(): boolean
+	constructor (list: List<KeyValuePair<K,V>>)
 	{
-		throw new NotImplementedException ();
-	}
-	get Current(): KeyValuePair<K,V>
-	{
-		throw new NotImplementedException ();	
-	}
-	Dispose(): void
-	{
+		super(list);
 	}
 }
 
@@ -844,7 +900,7 @@ class Regex extends NObject
 
 	IsMatch(input: string): boolean
 	{
-		throw new NotImplementedException ();
+		return this.re.test(input);
 	}
 }
 
@@ -943,18 +999,24 @@ class BinaryWriter extends NObject
 
 class StringBuilder extends NObject
 {
+	private parts: string[] = new Array<string> ();
+
 	Append(text: string): void
 	Append(char: number): void
 	Append(textOrChar: any): void
 	{
-		throw new NotImplementedException ();
+		var text: string = (textOrChar.constructor == Number) ? String.fromCharCode (textOrChar) : textOrChar;
+		this.parts.push(text);
 	}
 
 	AppendLine(): void
 	AppendLine(text: string): void
-	AppendLine(text?: string): void
+	AppendLine(text: string = null): void
 	{
-		this.Append(text + Environment.NewLine);
+		if (text !== null) {
+			this.parts.push(text);
+		}
+		this.parts.push(Environment.NewLine);
 	}
 
 	AppendFormat(text: string): void
@@ -968,12 +1030,16 @@ class StringBuilder extends NObject
 
 	ToString(): string
 	{
-		throw new NotImplementedException ();
+		return this.parts.join("");
 	}
 
 	get Length(): number
 	{
-		throw new NotImplementedException ();	
+		var len = 0;
+		for (var i = 0; i < this.parts.length; i++) {
+			len += this.parts[i].length;
+		}
+		return len;
 	}
 }
 
