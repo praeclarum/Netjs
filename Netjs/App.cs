@@ -124,8 +124,13 @@ namespace Netjs
 
 		public static void Warning (string format, params object[] args)
 		{
+			Warning (string.Format (format, args));
+		}
+
+		public static void Warning (string message)
+		{
 			Console.ForegroundColor = ConsoleColor.Yellow;
-			Console.WriteLine (format, args);
+			Console.WriteLine (message);
 			Console.ResetColor ();
 		}
 

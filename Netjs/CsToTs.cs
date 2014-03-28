@@ -60,6 +60,7 @@ namespace Netjs
 			yield return new ReplaceObjectEquals ();
 			yield return new InlineDelegates ();
 			yield return new OperatorDeclsToMethods ();
+			yield return new NewArraysNeedDefaultValues ();
 			yield return new PassArraysAsEnumerables ();
 			yield return new WrapRefArgs ();
 			yield return new ReplaceDefault ();
@@ -85,6 +86,132 @@ namespace Netjs
 			yield return new GotoRemoval ();
 			yield return new OrderClasses ();
 			yield return new AddReferences ();
+		}
+
+		class NewArraysNeedDefaultValues : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+
+			public override void VisitArrayCreateExpression (ArrayCreateExpression arrayCreateExpression)
+			{
+				base.VisitArrayCreateExpression (arrayCreateExpression);
+
+				if (arrayCreateExpression.Arguments.Count != 1 || !arrayCreateExpression.Initializer.IsNull)
+					return;
+
+				var count = arrayCreateExpression.Arguments.First ();
+				if (count is PrimitiveExpression && Convert.ToInt32 (((PrimitiveExpression)count).Value) == 0)
+					return;
+
+				var s = arrayCreateExpression.GetParent<Statement> ();
+				if (s == null)
+					return;
+
+				var find = new FindFirstUseOfArray ();
+
+				var variableDeclarationStatement = s as VariableDeclarationStatement;
+				if (variableDeclarationStatement != null) {
+					var v = arrayCreateExpression.GetParent <VariableInitializer> ();
+					find.Variable = new IdentifierExpression (v.Name);
+
+				} else {
+					var es = s as ExpressionStatement;
+					if (es != null && es.Expression is AssignmentExpression) {
+						find.Variable = ((AssignmentExpression)es.Expression).Left;
+					} else {
+						return; // Don't know what's going on
+					}
+				}
+
+				if (find.Variable == null)
+					return;
+
+				arrayCreateExpression.GetParent<EntityDeclaration> ().AcceptVisitor (find);
+				if ((find.First is AssignmentExpression))
+					return;
+
+				var i = new IdentifierExpression ("_ai");
+				var def = GetDefaultValue (arrayCreateExpression.Type);
+
+				var init = new ForStatement {
+					Condition = new BinaryOperatorExpression (
+						i,
+						BinaryOperatorType.LessThan,
+						new MemberReferenceExpression ((Expression)find.Variable.Clone (), "length")),
+					EmbeddedStatement = new ExpressionStatement (
+						new AssignmentExpression (
+							new IndexerExpression ((Expression)find.Variable.Clone (), i.Clone ()),
+							def.Clone ())),
+				};
+				init.Initializers.Add (new VariableDeclarationStatement (new PrimitiveType ("number"), i.Identifier, new PrimitiveExpression (0)));
+				init.Iterators.Add (new ExpressionStatement (new UnaryOperatorExpression (UnaryOperatorType.Increment, (Expression)i.Clone ())));
+
+				s.Parent.InsertChildAfter (s, init, (Role<Statement>)s.Role);
+			}
+
+			class FindFirstUseOfArray : DepthFirstAstVisitor
+			{
+				public AstNode Variable;
+
+				public AstNode First;
+
+				bool Match (AstNode p)
+				{
+					return NodesEqual (Variable, p);
+				}
+
+				public override void VisitIndexerExpression (IndexerExpression indexerExpression)
+				{
+					base.VisitIndexerExpression (indexerExpression);
+
+					if (Match (indexerExpression.Target) && First == null) {
+						First = indexerExpression;
+					}
+				}
+
+				public override void VisitAssignmentExpression (AssignmentExpression assignmentExpression)
+				{
+					var indexerExpression = assignmentExpression.Left as IndexerExpression;
+					if (indexerExpression != null) {
+						if (Match (indexerExpression.Target) && First == null) {
+							First = assignmentExpression;
+						}
+					}
+
+					base.VisitAssignmentExpression (assignmentExpression);
+				}
+			}
+		}
+
+		static bool NodesEqual(AstNode Variable, AstNode p)
+		{
+			if (Variable is IdentifierExpression) {
+				var pi = p as IdentifierExpression;
+				if (pi == null)
+					return false;
+				return ((IdentifierExpression)Variable).Identifier == pi.Identifier;
+			}
+
+			var mr = Variable as MemberReferenceExpression;
+			if (mr != null) {
+				var pmr = p as MemberReferenceExpression;
+				if (pmr == null)
+					return false;
+				if (mr.MemberName != pmr.MemberName)
+					return false;
+				return NodesEqual (mr.Target, pmr.Target);
+			}
+
+			var th = Variable as ThisReferenceExpression;
+			if (th != null) {
+				var pth = p as ThisReferenceExpression;
+				return pth != null;
+			}
+
+			throw new NotImplementedException ();
 		}
 
 		class ReplaceObjectEquals : DepthFirstAstVisitor, IAstTransform
@@ -511,15 +638,12 @@ namespace Netjs
 				new IAstVisitor[] { new LiftLabeledSwitchSections () },
 				new IAstVisitor[] { new LiftLabeledSwitchSections (), new SmallInlineGoto () },
 				new IAstVisitor[] { new LiftLabeledSwitchSections (), new SmallInlineGoto (), new BigInlineGoto () },
-				new IAstVisitor[] { new AddImplicitGoto (), new SmallInlineGoto () },
+				new IAstVisitor[] { new LiftLabeledSwitchSections (), new AddImplicitGoto (), new BigInlineGoto () },
 			};
 
 			public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
 			{
 				base.VisitMethodDeclaration (methodDeclaration);
-
-				if (methodDeclaration.Body.IsNull)
-					return;
 
 				//
 				// Try to force the method into a form we can handle
@@ -539,8 +663,8 @@ namespace Netjs
 						foreach (var t in ts) {
 							m.AcceptVisitor (t);
 							m.AcceptVisitor (new RemoveRedundantGotos ());
+							m.AcceptVisitor (new RemoveUnreachableStatements ());
 						}
-						m.AcceptVisitor (new RemoveUnreachableStatements ());
 						m.AcceptVisitor (new RemoveLabelsWithoutGotos ());
 
 						if (!HasBadLabels (m)) {
@@ -575,8 +699,10 @@ namespace Netjs
 					if (t == null)
 						return;
 
-					labelStatement.Remove ();
-					t.Parent.InsertChildBefore (t, labelStatement, (Role<Statement>)t.Role);
+					if (t.TryBlock.Statements.First () == labelStatement) {
+						labelStatement.Remove ();
+						t.Parent.InsertChildBefore (t, labelStatement, (Role<Statement>)t.Role);
+					}
 				}
 			}
 
@@ -813,7 +939,7 @@ namespace Netjs
 				{
 					base.VisitGotoStatement (gotoStatement);
 
-					while (gotoStatement.NextSibling != null && !gotoStatement.NextSibling.IsNull && !(gotoStatement.NextSibling is LabelStatement)) {
+					while (gotoStatement.NextSibling != null && !gotoStatement.NextSibling.IsNull && !(gotoStatement.NextSibling.DescendantsAndSelf.OfType<LabelStatement> ().Any ())) {
 						gotoStatement.NextSibling.Remove ();
 					}
 				}
@@ -822,7 +948,7 @@ namespace Netjs
 				{
 					base.VisitReturnStatement (returnStatement);
 
-					while (returnStatement.NextSibling != null && !returnStatement.NextSibling.IsNull && !(returnStatement.NextSibling is LabelStatement)) {
+					while (returnStatement.NextSibling != null && !returnStatement.NextSibling.IsNull && !(returnStatement.NextSibling.DescendantsAndSelf.OfType<LabelStatement> ().Any ())) {
 						returnStatement.NextSibling.Remove ();
 					}
 				}
@@ -908,12 +1034,27 @@ namespace Netjs
 				{
 					base.VisitMethodDeclaration (methodDeclaration);
 
-					var inlabels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Select (LabelIsBigInlineable).Where (x => x.Item2.Count > 0).ToList ();
+					var i = new Inline ();
+					while (i.KeepGoing) {
+						i.KeepGoing = false;
+						methodDeclaration.AcceptVisitor (i);
+					}
+				}
+				class Inline : DepthFirstAstVisitor
+				{
+					public bool KeepGoing = true;
+					public override void VisitMethodDeclaration (MethodDeclaration methodDeclaration)
+					{
+						base.VisitMethodDeclaration (methodDeclaration);
 
-					if (inlabels.Count == 0)
-						return;
+						var inlabels = methodDeclaration.Body.Descendants.OfType<LabelStatement> ().Select (LabelIsBigInlineable).Where (x => x.Item2.Count > 0)
+							.OrderBy (x => x.Item2.Count).ToList ();
 
-					foreach (var l in inlabels) {
+						if (inlabels.Count == 0)
+							return;
+
+						KeepGoing = true;
+						var l = inlabels[0];
 						var labelName = l.Item1.Label;
 						foreach (var g in methodDeclaration.Body.Descendants.OfType<GotoStatement> ().Where (x => x.Label == labelName)) {
 
@@ -1013,7 +1154,7 @@ namespace Netjs
 
 			static bool StatementIsSafe (AstNode n)
 			{
-				return !(n is LabelStatement || n is SwitchStatement);
+				return !n.DescendantsAndSelf.Any (x => x is LabelStatement || x is SwitchStatement);
 			}
 
 			static bool StatementIsBranch (AstNode n)
@@ -2714,7 +2855,7 @@ namespace Netjs
 
 					if (typeDeclaration.TypeParameters.Count > 0) {
 						if (n.TypeParameters.Count > 0) {
-							Console.WriteLine ("WARNING Nested class is generic and so is its parent. This is not supported.");
+							App.Warning ("WARNING Nested class is generic and so is its parent. This is not supported.");
 							n.TypeParameters.AddRange (typeDeclaration.TypeParameters.Select (x => (TypeParameterDeclaration)x.Clone ()));
 						}
 					}
@@ -2867,9 +3008,6 @@ namespace Netjs
 					var ilambda = new InvocationExpression (lambda);
 
 					invocationExpression.ReplaceWith (ilambda);
-
-
-//					Console.WriteLine ("SDF");
 				}
 			}
 		}
@@ -3101,10 +3239,6 @@ namespace Netjs
 						var thisInit = c.Initializer;
 						var md = GetMethodDef (thisInit);
 						var thisCtor = ctors.FirstOrDefault (x => GetMethodDef (x) == (md));
-
-						if (thisCtor == null) {
-							Console.WriteLine ("SDF");
-						}
 
 						//
 						// Inline this
