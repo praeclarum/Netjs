@@ -1841,7 +1841,10 @@ namespace Netjs
 
 				HashSet<string> repls = null;
 				string newTypeName = null;
-				if (t.FullName == "System.String") {
+				if (t.FullName == "System.Object") {
+					repls = objectRepls;
+					newTypeName = "NObject";
+				} else if (t.FullName == "System.String") {
 					repls = stringRepls;
 					newTypeName = "NString";
 				} else if (t.FullName == "System.Boolean") {
@@ -1859,9 +1862,17 @@ namespace Netjs
 						right.Remove ();
 						invocationExpression.ReplaceWith (new BinaryOperatorExpression (left, BinaryOperatorType.Equality, right));
 					} else {
-						var n = new InvocationExpression (new MemberReferenceExpression (new TypeReferenceExpression (new SimpleType (newTypeName)), memberReferenceExpression.MemberName), new Expression[] {
-							memberReferenceExpression.Target.Clone ()
-						}.Concat (invocationExpression.Arguments.Select (x => x.Clone ())));
+						var newName = memberReferenceExpression.MemberName;
+						if (newTypeName == "NObject") {
+							newName = "Generic" + newName;
+						}
+						var n = new InvocationExpression (
+							        new MemberReferenceExpression (
+								        new TypeReferenceExpression (new SimpleType (newTypeName)), 
+								        newName),
+							new Expression[] { memberReferenceExpression.Target.Clone () }
+								.Concat (invocationExpression.Arguments.Select (x => x.Clone ())));
+
 						var td = t.Resolve ();
 						var meth = td.Methods.First (x => x.Name == memberReferenceExpression.MemberName);
 						n.AddAnnotation (meth.ReturnType);
@@ -1870,6 +1881,12 @@ namespace Netjs
 				}
 			}
 		}
+
+		static HashSet<string> objectRepls = new HashSet<string>
+		{
+			"GetHashCode",
+			"ToString",
+		};
 
 		static HashSet<string> numberRepls = new HashSet<string>
 		{
@@ -2501,16 +2518,31 @@ namespace Netjs
 						Body = body,
 					};
 
+					IfElseStatement lastIf = null;
 
 					foreach (var c in catches) {
 
 						var cbody = c.Body;
 						cbody.Remove ();
 
-						body.Add (new IfElseStatement (GetNotNullTypeCheck ("_ex", c.Type), cbody));
+						var iff = new IfElseStatement (GetNotNullTypeCheck ("_ex", c.Type), cbody);
+
+						if (lastIf == null)
+							body.Add (iff);
+						else
+							lastIf.FalseStatement = iff;
+
+						lastIf = iff;
 
 						c.Remove ();
 					}
+
+					var rethrow = new ThrowStatement (new IdentifierExpression ("_ex"));
+
+					if (lastIf == null)
+						body.Add (rethrow);
+					else
+						lastIf.FalseStatement = rethrow;
 
 					tryCatchStatement.CatchClauses.Add (newCatch);
 				}
