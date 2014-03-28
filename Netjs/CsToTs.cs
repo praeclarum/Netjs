@@ -41,6 +41,7 @@ namespace Netjs
 			yield return new StructToClass ();
 			yield return new FixGenericsThatUseObject ();
 			yield return new FixEvents ();
+			yield return new FixTypeOf ();
 			yield return new RemoveNonGenericEnumerable ();
 			yield return new RemovePrivateInterfaceOverloads ();
 			yield return new AvoidTrickyJsKeywords ();
@@ -56,6 +57,7 @@ namespace Netjs
 			yield return new FixEmptyThrow ();
 			yield return new AnonymousInitializersNeedNames ();
 			yield return new InlineEnumMethods ();
+			yield return new ReplaceObjectEquals ();
 			yield return new InlineDelegates ();
 			yield return new OperatorDeclsToMethods ();
 			yield return new PassArraysAsEnumerables ();
@@ -73,7 +75,7 @@ namespace Netjs
 			yield return new SuperPropertiesToThis ();
 			yield return new BitwiseOrToConditionalForBooleans ();
 			yield return new RemoveDelegateConstructors ();
-			yield return new RemoveNullable ();
+			yield return new MakeNullableExplicit ();
 			yield return new RemoveEnumBaseType ();
 			yield return new RemoveGenericArgsInIsExpr ();
 			yield return new RemoveAttributes ();
@@ -83,6 +85,55 @@ namespace Netjs
 			yield return new GotoRemoval ();
 			yield return new OrderClasses ();
 			yield return new AddReferences ();
+		}
+
+		class ReplaceObjectEquals : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+
+			public override void VisitInvocationExpression (InvocationExpression invocationExpression)
+			{
+				base.VisitInvocationExpression (invocationExpression);
+
+				var mr = invocationExpression.Target as MemberReferenceExpression;
+				if (mr == null)
+					return;
+
+				if (mr.MemberName != "Equals")
+					return;
+
+				var m = invocationExpression.Annotation<MemberReference> ();
+				if (m.DeclaringType.FullName != "System.Object")
+					return;
+
+				var i = new InvocationExpression (
+					        new MemberReferenceExpression (new TypeReferenceExpression (new SimpleType ("NObject")), "GenericEquals"),
+					mr.Target.Clone (), invocationExpression.Arguments.First ().Clone ());
+
+				invocationExpression.ReplaceWith (i);
+			}
+		}
+
+		class FixTypeOf : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+
+			public override void VisitTypeOfExpression (TypeOfExpression typeOfExpression)
+			{
+				base.VisitTypeOfExpression (typeOfExpression);
+
+				var nt = new ObjectCreateExpression (
+					         new SimpleType ("Type"),
+					new PrimitiveExpression (GetJsConstructor (typeOfExpression.Type)));
+
+				typeOfExpression.ReplaceWith (nt);
+			}
 		}
 
 		class InitializeFields : DepthFirstAstVisitor, IAstTransform
@@ -2209,23 +2260,49 @@ namespace Netjs
 			}
 		}
 
-		class RemoveNullable : DepthFirstAstVisitor, IAstTransform
+		class MakeNullableExplicit : IAstTransform
 		{
 			public void Run (AstNode compilationUnit)
 			{
-				compilationUnit.AcceptVisitor (this);
+				compilationUnit.AcceptVisitor (new FixAssignments ());
+				compilationUnit.AcceptVisitor (new ComposedToNullable ());
 			}
 
-			public override void VisitComposedType (ComposedType composedType)
+			class FixAssignments : DepthFirstAstVisitor
 			{
-				base.VisitComposedType (composedType);
+				public override void VisitVariableDeclarationStatement (VariableDeclarationStatement variableDeclarationStatement)
+				{
+					base.VisitVariableDeclarationStatement (variableDeclarationStatement);
 
-				if (!composedType.HasNullableSpecifier)
-					return;
+					var composedType = variableDeclarationStatement.Type as ComposedType;
+					if (composedType == null)
+						return;
 
-				var st = new SimpleType ("Nullable", composedType.BaseType.Clone ());
+					if (!composedType.HasNullableSpecifier)
+						return;
 
-				composedType.ReplaceWith (st);
+					foreach (var v in variableDeclarationStatement.Variables) {
+						if (!v.Initializer.IsNull && v.Initializer is NullReferenceExpression) {
+							var st = new SimpleType ("Nullable", composedType.BaseType.Clone ());
+							v.Initializer = new ObjectCreateExpression (st);
+						}
+					}
+				}
+			}
+
+			class ComposedToNullable : DepthFirstAstVisitor
+			{
+				public override void VisitComposedType (ComposedType composedType)
+				{
+					base.VisitComposedType (composedType);
+
+					if (!composedType.HasNullableSpecifier)
+						return;
+
+					var st = new SimpleType ("Nullable", composedType.BaseType.Clone ());
+
+					composedType.ReplaceWith (st);
+				}
 			}
 		}
 
