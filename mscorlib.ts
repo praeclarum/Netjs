@@ -38,6 +38,11 @@ class NObject
 	{
 		return x === y;
 	}
+	static GenericEquals(x: any, y: any): boolean
+	{
+		if (typeof x === "object") return x.Equals(y);
+		return x === y;
+	}
 }
 
 class Exception extends NObject
@@ -113,7 +118,7 @@ class NNumber
 	static Parse(text: string, provider: IFormatProvider): number
 	static Parse(text: string, styleOrProvider?: any, provider?: IFormatProvider): number
 	{
-		throw new NotImplementedException ();
+		return parseFloat(text);
 	}
 
 	static ToString(num: number): string
@@ -121,7 +126,7 @@ class NNumber
 	static ToString(num: number, format: string, provider: IFormatProvider): string
 	static ToString(num: number, providerOrFormat?: any, provider?: IFormatProvider): string
 	{
-		throw new NotImplementedException ();
+		return num.toString();
 	}
 	static GetHashCode(num: number): number
 	{
@@ -171,7 +176,13 @@ class NChar
 	static IsDigit(str: string, index: number): boolean
 	static IsDigit(chOrStr: any, index?: number): boolean
 	{
-		throw new NotImplementedException();
+		if (arguments.length == 1) {
+			return 48 <= chOrStr && chOrStr <= 57;
+		}
+		else {
+			var ch = chOrStr.charCodeAt(index);
+			return 48 <= ch && ch <= 57;
+		}
 	}
 }
 
@@ -275,8 +286,15 @@ class NString
 
 	static FromChars(ch: number, count: number): string
 	static FromChars(chars: number[]): string
-	static FromChars(chOrChars: any, count?: number): string
+	static FromChars(chOrChars: any, count: number = 1): string
 	{
+		if (chOrChars.constructor === Number) {
+			var r = String.fromCharCode (chOrChars);
+			for (var i = 2; i < count; i++) {
+				r += String.fromCharCode (chOrChars);
+			}
+			return r;
+		}
 		throw new NotImplementedException ();
 	}
 }
@@ -338,8 +356,8 @@ class Type extends NObject
 class Nullable<T> extends NObject
 {
 	Value: T;
-	HasValue: boolean;
-	constructor(value: T)
+	get HasValue(): boolean { return this.Value != null; }
+	constructor(value: T = null)
 	{
 		super();
 		this.Value = value;
@@ -477,14 +495,14 @@ class Convert extends NObject
 
 class NumberFormatInfo extends NObject
 {
-	NumberDecimalSeparator: string;
-	NumberGroupSeparator: string;
+	NumberDecimalSeparator: string = ".";
+	NumberGroupSeparator: string = ",";
 }
 
 
 interface IFormatProvider
 {
-	GetFormat(typeName: string): any;
+	GetFormat(type: Type): any;
 }
 
 enum NumberStyles
@@ -504,9 +522,14 @@ class CultureInfo extends NObject implements IFormatProvider
 
 	Name: string = "Invariant";
 
-	GetFormat(typeName: string): any
+	private nfi: NumberFormatInfo = new NumberFormatInfo ();
+
+	GetFormat(type: Type): any
 	{
-		throw new NotImplementedException ();
+		if (type.Name === "NumberFormatInfo") {
+			return this.nfi;
+		}
+		return null;
 	}
 
 	constructor(name: string)
@@ -645,7 +668,14 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	RemoveAll(predicate: (item: T)=>boolean): void
 	{
-		throw new NotImplementedException ();
+		var newArray: T[] = new Array<T> ();
+
+		for (var i = 0; i < this.array.length; i++) {
+			if (!predicate(this.array[i]))
+				newArray.push(this.array[i]);
+		}
+
+		this.array = newArray;
 	}
 
 	Reverse(): void
