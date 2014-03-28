@@ -920,7 +920,16 @@ class Regex extends NObject
 
 	Match(input: string): Match
 	{
-		throw new NotImplementedException ();
+		var m = new Match();
+		var r = this.re.exec(input);
+		if (r) {
+			for (var i = 0; i < r.length; ++i) {
+				if (r[i].constructor == String)
+					m.Groups.Add (new Group (r[i], i));
+			}
+			m.Success = true;
+		}
+		return m;
 	}
 
 	Replace(input: string, repl: string): string
@@ -936,18 +945,8 @@ class Regex extends NObject
 
 class Match extends NObject
 {
-	Groups: GroupList = new GroupList ();
+	Groups: List<Group> = new List<Group> ();
 	Success: boolean = false;
-}
-
-class GroupList extends List<Group>
-{
-	get_Item (index: number): Group
-	get_Item (name: string): Group
-	get_Item (indexOrName: any): Group
-	{
-		throw new NotImplementedException ();
-	}
 }
 
 class Group extends NObject
@@ -955,6 +954,12 @@ class Group extends NObject
 	Length: number = 0;
 	Value: string = "";
 	Index: number = 0;
+	constructor(value: string, index: number)
+	{
+		super();
+		this.Value = value;
+		this.Index = index;
+	}
 }
 
 class Stream extends NObject
