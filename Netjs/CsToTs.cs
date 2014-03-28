@@ -40,6 +40,7 @@ namespace Netjs
 			yield return new FlattenNamespaces ();
 			yield return new StructToClass ();
 			yield return new FixGenericsThatUseObject ();
+			yield return new FixEvents ();
 			yield return new RemoveNonGenericEnumerable ();
 			yield return new RemovePrivateInterfaceOverloads ();
 			yield return new AvoidTrickyJsKeywords ();
@@ -47,13 +48,13 @@ namespace Netjs
 			yield return new MergeCtors ();
 			yield return new EnsureAtLeastOneCtor ();
 			yield return new DealWithStaticCtors ();
+			yield return new PropertiesToMethods ();
+			yield return new InitializeFields ();
 			yield return new MakeSuperCtorFirst ();
 			yield return new MergeOverloads ();
-			yield return new PropertiesToMethods ();
 			yield return new FixCatches ();
 			yield return new FixEmptyThrow ();
 			yield return new AnonymousInitializersNeedNames ();
-			yield return new FixEvents ();
 			yield return new InlineEnumMethods ();
 			yield return new InlineDelegates ();
 			yield return new OperatorDeclsToMethods ();
@@ -82,6 +83,46 @@ namespace Netjs
 			yield return new GotoRemoval ();
 			yield return new OrderClasses ();
 			yield return new AddReferences ();
+		}
+
+		class InitializeFields : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+
+			public override void VisitTypeDeclaration (TypeDeclaration typeDeclaration)
+			{
+				base.VisitTypeDeclaration (typeDeclaration);
+
+				if (typeDeclaration.ClassType != ClassType.Class)
+					return;
+
+				foreach (var fieldDeclaration in typeDeclaration.Members.OfType<FieldDeclaration> ()) {
+
+					foreach (var v in fieldDeclaration.Variables) {
+
+						if (v.Initializer.IsNull) {
+
+							v.Initializer = GetDefaultValue (fieldDeclaration.ReturnType);
+
+						}
+
+					}
+
+				}
+			}
+		}
+
+		static Expression GetDefaultValue (AstType returnType)
+		{
+			var js = GetJsConstructor (returnType);
+			if (js == "Number")
+				return new PrimitiveExpression (0);
+			if (js == "Boolean")
+				return new PrimitiveExpression (false);
+			return new PrimitiveExpression (null);
 		}
 
 		class OrderClasses : IAstTransform
@@ -184,6 +225,8 @@ namespace Netjs
 								AddExpression (m);
 							}
 						}
+
+						char.IsWhiteSpace ('d');
 
 						var tr = t.Target as TypeReferenceExpression;
 						if (tr != null) {
@@ -529,6 +572,7 @@ namespace Netjs
 					loop.EmbeddedStatement = loopBlock;
 
 					var firstLabel = methodDeclaration.Body.Descendants.First (x => /*(x is GotoStatement) ||*/ (x is LabelStatement && HasGoto ((LabelStatement)x)));
+					var stmtRole = (Role<Statement>)firstLabel.Role;
 
 					var block = firstLabel.Parent;
 
@@ -572,18 +616,18 @@ namespace Netjs
 						loopSwitch.SwitchSections.Add (sec);
 
 						if (ls.Item1 != null) {
-							loopBlock.Statements.InsertBefore (
-								loopSwitch, 
-								new VariableDeclarationStatement (new PrimitiveType ("number"), ls.Item1.Label, new PrimitiveExpression (i)));
+							block.AddChild (
+								new VariableDeclarationStatement (new PrimitiveType ("number"), ls.Item1.Label, new PrimitiveExpression (i)),
+								stmtRole);
 						}
 					}
 
-					loopBlock.Statements.InsertBefore (
-						loopSwitch, 
-						new VariableDeclarationStatement (new PrimitiveType ("number"), "_goto", new PrimitiveExpression (0)));
+					block.AddChild (
+						new VariableDeclarationStatement (new PrimitiveType ("number"), "_goto", new PrimitiveExpression (0)),
+						stmtRole);
 
-					block.AddChild (loopLabel, (Role<Statement>)firstLabel.Role);
-					block.AddChild (loop, (Role<Statement>)firstLabel.Role);
+					block.AddChild (loopLabel, stmtRole);
+					block.AddChild (loop, stmtRole);
 				}
 			}
 
