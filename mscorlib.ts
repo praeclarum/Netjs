@@ -43,21 +43,29 @@ class NObject
 		if (typeof x === "object") return x.Equals(y);
 		return x === y;
 	}
+	static GenericToString(x: any): string
+	{
+		if (typeof x === "object") return x.ToString();
+		return x.toString ();
+	}
+	static GenericGetHashCode(x: any): number
+	{		
+		if (typeof x === "object") return x.GetHashCode();
+		return NString.GetHashCode (this.toString ());
+	}
 }
 
 class Exception extends NObject
 {
-	private message: string;
-	constructor()
-	constructor(message: string)
-	constructor(message?: string)
+	Message: string;
+	constructor(message: string = "")
 	{
 		super();
-		this.message = message + "";
+		this.Message = message;
 	}
 	ToString(): string
 	{
-		return "Exception: " + this.message;
+		return "Exception: " + this.Message;
 	}
 }
 
@@ -166,11 +174,11 @@ class NChar
 	}
 	static IsLetter(ch: number): boolean
 	{
-		throw new NotImplementedException();
+		return (65 <= ch && ch <=  90) || (97 <= ch && ch <= 122) || (ch >= 128 && ch !== 133 && ch !== 160);
 	}
 	static IsLetterOrDigit(ch: number): boolean
 	{
-		throw new NotImplementedException();
+		return (48 <= ch && ch <= 57) || (65 <= ch && ch <=  90) || (97 <= ch && ch <= 122) || (ch >= 128 && ch !== 133 && ch !== 160);
 	}
 	static IsDigit(ch: number): boolean
 	static IsDigit(str: string, index: number): boolean
@@ -222,7 +230,9 @@ class NString
 	static Replace(str: string, pattern: string, replacement: string): string
 	static Replace(str: string, pattern: any, replacement: any): string
 	{
-		throw new NotImplementedException();
+		var ps = (pattern.constructor === Number) ? String.fromCharCode (pattern) : pattern;
+		var rs = (replacement.constructor === Number) ? String.fromCharCode (replacement) : replacement;
+		return str.replace(ps, rs);
 	}
 	static Substring(str: string, startIndex: number): string
 	static Substring(str: string, startIndex: number, length: number): string
@@ -250,11 +260,11 @@ class NString
 	}
 	static ToUpperInvariant(str: string): string
 	{
-		throw new NotImplementedException();
+		return str.toUpperCase ();
 	}
 	static ToLowerInvariant(str: string): string
 	{
-		throw new NotImplementedException();
+		return str.toLowerCase ();
 	}
 	static StartsWith(str: string, sub: string): boolean
 	static StartsWith(str: string, sub: string, comp: StringComparison): boolean
@@ -643,7 +653,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	RemoveAt(index: number): void
 	{
-		throw new NotImplementedException ();
+		this.array.splice(index, 1);
 	}
 
 	RemoveRange(index: number, count: number): void
@@ -653,7 +663,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	Insert(index: number, item: T): void
 	{
-		throw new NotImplementedException ();
+		this.array.splice(index, 0, item);
 	}
 
 	Clear(): void
@@ -848,7 +858,9 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 
 	Remove(key: K): void
 	{
-		throw new NotImplementedException ();
+		var ks = this.GetKeyString (key);
+		delete this.values[ks];
+		delete this.keys[ks];
 	}
 
 	Clear(): void
@@ -861,7 +873,6 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 	{
 		return Object.keys(this.values).length;
 	}
-
 	GetEnumerator(): Dictionary_Enumerator<K,V>
 	{
 		var kvs = new List<KeyValuePair<K,V>>();
@@ -870,15 +881,21 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		}
 		return new Dictionary_Enumerator<K,V> (kvs);
 	}
-
-	get Keys(): IEnumerable<K>
+	get Keys(): Dictionary_KeyCollection<K, V>
 	{
-		throw new NotImplementedException ();
+		var keys = new Dictionary_KeyCollection<K, V> ();
+		for (var ks in this.keys) {
+			keys.Add (this.keys[ks]);
+		}
+		return keys;
 	}
-	
-	get Values(): Dictionary_ValueCollection_Enumerator<K, V>
+	get Values(): Dictionary_ValueCollection<K, V>
 	{
-		throw new NotImplementedException ();
+		var vals = new Dictionary_ValueCollection<K, V> ();
+		for (var ks in this.values) {
+			vals.Add (this.values[ks]);
+		}
+		return vals;
 	}
 }
 
@@ -890,22 +907,27 @@ class Dictionary_Enumerator<K, V> extends List_Enumerator<KeyValuePair<K,V>>
 	}
 }
 
-class Dictionary_ValueCollection_Enumerator<K, V> extends NObject implements IEnumerator<V>, IEnumerable<V>, IDisposable
+class Dictionary_KeyCollection<K, V> extends List<K>
 {
-	MoveNext(): boolean
+}
+
+class Dictionary_KeyCollection_Enumerator<K, V> extends List_Enumerator<K>
+{
+	constructor (list: List<K>)
 	{
-		throw new NotImplementedException ();
+		super(list);
 	}
-	get Current(): V
+}
+
+class Dictionary_ValueCollection<K, V> extends List<V>
+{
+}
+
+class Dictionary_ValueCollection_Enumerator<K, V> extends List_Enumerator<V>
+{
+	constructor (list: List<V>)
 	{
-		throw new NotImplementedException ();	
-	}
-	Dispose(): void
-	{
-	}
-	GetEnumerator(): Dictionary_ValueCollection_Enumerator<K, V>
-	{
-		return this;
+		super(list);
 	}
 }
 
@@ -1095,9 +1117,30 @@ class TextReader extends NObject implements IDisposable
 
 class StringReader extends TextReader
 {
+	private str: string;
+	private pos: number;	
 	constructor(str: string)
 	{
 		super();
+		this.str = str;
+		this.pos = 0;
+	}
+	ReadLine(): string
+	{
+		var p = this.pos;
+		if (p >= this.str.length)
+			return null;
+		var end = p;
+		while (end < this.str.length && this.str.charCodeAt(end) !== 10) {
+			end++;
+		}
+		var tend = end;
+		if (tend > p && this.str.charCodeAt(tend-1) == 13) {
+			tend--;
+		}
+		var r = this.str.substr(p, tend - p);
+		this.pos = end + 1;
+		return r;
 	}
 }
 
@@ -1117,11 +1160,9 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();
 	}
 
-	static ToList<T>(e: T[]): List<T>
 	static ToList<T>(e: IEnumerable<T>): List<T>
-	static ToList<T>(e: any): List<T>
 	{
-		throw new NotImplementedException ();
+		return new List<T>(e);
 	}
 
 	static Empty<T>(): IEnumerable<T>
@@ -1129,9 +1170,7 @@ class Enumerable extends NObject
 		return new List<T> ();
 	}
 
-	static Select<T,U>(e: T[], selector: (T)=>U): IEnumerable<U>
 	static Select<T,U>(e: IEnumerable<T>, selector: (T)=>U): IEnumerable<U>
-	static Select<T,U>(e: any, selector: (T)=>U): IEnumerable<U>
 	{
 		throw new NotImplementedException ();
 	}
