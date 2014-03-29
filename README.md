@@ -59,8 +59,12 @@ This compiles the library code along with a small implementation of mscorlib. Th
 ## Limitations
 
 * **Namespaces are ignored**
-* mscorlib.ts is a **small subset** of the full BCL
+* mscorlib.ts is a **tiny subset** of the full BCL
 * **Virtual overloaded methods** do not work
 * **Async** does not work
 * **Gotos** only sometimes work
+* **Named groups** in regular expressions don't work.
+* Seriously, watch it with those overloads.
+
+
 
