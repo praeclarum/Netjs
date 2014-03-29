@@ -56,10 +56,12 @@ namespace Netjs
 			yield return new FixCatches ();
 			yield return new FixEmptyThrow ();
 			yield return new AnonymousInitializersNeedNames ();
-			yield return new InlineEnumMethods ();
 			yield return new ReplaceObjectEquals ();
 			yield return new InlineDelegates ();
 			yield return new OperatorDeclsToMethods ();
+			yield return new ExpandOperators ();
+			yield return new ExpandIndexers ();
+			yield return new InlineEnumMethods ();
 			yield return new NewArraysNeedDefaultValues ();
 			yield return new PassArraysAsEnumerables ();
 			yield return new WrapRefArgs ();
@@ -70,8 +72,6 @@ namespace Netjs
 			yield return new StringConstructorsToMethods ();
 			yield return new MakePrimitiveTypesJsTypes ();
 			yield return new FixIsOp ();
-			yield return new ExpandOperators ();
-			yield return new ExpandIndexers ();
 			yield return new Renames ();
 			yield return new SuperPropertiesToThis ();
 			yield return new BitwiseOrToConditionalForBooleans ();
@@ -1980,44 +1980,35 @@ namespace Netjs
 			{
 				base.VisitIndexerExpression (indexerExpression);
 
+
 				var tr = GetTypeRef (indexerExpression.Target);
 
-				if (tr != null && tr.IsArray)
+				if (tr != null && (tr.IsArray || tr.FullName == "System.String"))
 					return;
 
-				var td = GetTypeDef (indexerExpression.Target);
+				var t = indexerExpression.Target;
 
-				if (td != null) {
+				var pa = indexerExpression.Parent as AssignmentExpression;
 
-					var m = FindMethod (td, "get_Item");
-					if (m != null) {
+				if (pa != null && pa.Left == indexerExpression) {
 
-						var t = indexerExpression.Target;
+					var s = new InvocationExpression (
+						new MemberReferenceExpression (t.Clone(), "set_Item"),
+						indexerExpression.Arguments.Concat (new[]{pa.Right.Clone()}).Select (x => x.Clone ()));
 
-						var pa = indexerExpression.Parent as AssignmentExpression;
-
-						if (pa != null && pa.Left == indexerExpression) {
-
-							var s = new InvocationExpression (
-								new MemberReferenceExpression (t.Clone(), "set_Item"),
-								indexerExpression.Arguments.Concat (new[]{pa.Right.Clone()}).Select (x => x.Clone ()));
-
-							pa.ReplaceWith (s);
+					pa.ReplaceWith (s);
 
 
 
-						} else {
+				} else {
 
-							var s = new InvocationExpression (
-								new MemberReferenceExpression (t.Clone(), "get_Item"),
-								indexerExpression.Arguments.Select (x => x.Clone ()));
+					var s = new InvocationExpression (
+						new MemberReferenceExpression (t.Clone(), "get_Item"),
+						indexerExpression.Arguments.Select (x => x.Clone ()));
 
-							indexerExpression.ReplaceWith (s);
-						}
-
-					}
-
+					indexerExpression.ReplaceWith (s);
 				}
+
 			}
 		}
 

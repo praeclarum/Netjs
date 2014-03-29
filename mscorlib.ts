@@ -1098,6 +1098,19 @@ class StringBuilder extends NObject
 		}
 		return len;
 	}
+
+	get_Item(index: number): number
+	{
+		var o = 0;
+		for (var i = 0; i < this.parts.length; ++i) {
+			var p = this.parts[i];
+			if (index < o + p.length) {
+				return p.charCodeAt (index - o);
+			}
+			o += p.length;
+		}
+		return 0;
+	}
 }
 
 class TextReader extends NObject implements IDisposable
