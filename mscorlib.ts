@@ -111,10 +111,17 @@ class NArray
 	}
 	static ToEnumerable<T> (array: T[]): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		return new Array_Enumerable<T> (array);
 	}
-	static Resize<T> (parray: T[][], newLength: number): T[]
+	static Resize<T> (parray: T[][], newLength: number): void
 	{
+		if (parray[0] === null) {
+			parray[0] = new Array<T> (newLength);
+			return;
+		}
+		if (parray[0].length === newLength) {
+			return;
+		}
 		throw new NotImplementedException ();
 	}
 }
@@ -142,7 +149,7 @@ class NNumber
 	}
 	static IsInfinity(num: number): boolean
 	{
-		throw new NotImplementedException ();
+		return num === Infinity;
 	}
 	static TryParse(str: string, pvalue: number[]): boolean
 	{
@@ -602,7 +609,7 @@ interface IList<T>
 
 class List<T> extends NObject implements IList<T>, IEnumerable<T>
 {
-	private array: T[] = new Array<T> ();
+	array: T[] = new Array<T> (); // Public to help the enumerator
 
 	constructor();
 	constructor(capactiy: number);
@@ -610,10 +617,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	constructor(itemsOrCapacity?: any)
 	{
 		super();
-		if (typeof itemsOrCapacity !== "undefined" && itemsOrCapacity.constructor == Number) {
-			// We don't care
-		}
-		else if (itemsOrCapacity) {
+		if (arguments.length == 1 && itemsOrCapacity.constructor !== Number) {
 			this.AddRange (itemsOrCapacity);
 		}
 	}
@@ -699,26 +703,48 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	}
 }
 
-class List_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
+class Array_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
 {
-	private list: List<T>;
+	private array: T[];
 	private index: number = -1;
-	constructor (list: List<T>)
+	constructor (array: T[])
 	{
 		super();
-		this.list = list;
+		this.array = array;
 	}
 	MoveNext(): boolean
 	{
 		this.index++;
-		return this.index < this.list.Count;
+		return this.index < this.array.length;
 	}
 	get Current(): T
 	{
-		return this.list.get_Item(this.index);
+		return this.array[this.index];
 	}
 	Dispose(): void
 	{
+	}
+}
+
+class Array_Enumerable<T> extends NObject implements IEnumerable<T>
+{
+	private array: T[];
+	constructor (array: T[])
+	{
+		super();
+		this.array = array;
+	}
+	GetEnumerator(): Array_Enumerator<T>
+	{
+		return new Array_Enumerator<T> (this.array);
+	}
+}
+
+class List_Enumerator<T> extends Array_Enumerator<T>
+{
+	constructor (list: List<T>)
+	{
+		super(list.array);
 	}
 }
 
