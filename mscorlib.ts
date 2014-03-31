@@ -220,7 +220,14 @@ class NString
 	}
 	static IndexOfAny (str: string, subs: number[]): number
 	{
-		throw new NotImplementedException ();
+		for (var i = 0; i < str.length; ++i) {
+			var c = str.charCodeAt(i);
+			for (var j = 0; j < subs.length; ++j) {
+				if (c == subs[j])
+					return i;
+			}
+		}
+		return -1;
 	}
 	static GetHashCode(str: string): number
 	{
@@ -255,7 +262,7 @@ class NString
 	}	
 	static Trim(str: string): string
 	{
-		throw new NotImplementedException();
+		return str.trim();
 	}
 	static TrimStart(str: string, trimChars: number[]): string
 	{
@@ -326,19 +333,24 @@ class NMath extends NObject
 {
 	static Truncate (value: number): number
 	{
-		throw new NotImplementedException ();
+		return value >= 0 ? Math.floor(value) : Math.ceil(value);
 	}
 	static Log (a: number): number
 	static Log (a: number, newBase: number): number
-	static Log (a: number, newBase?: number): number
+	static Log (a: number, newBase: number = Math.E): number
 	{
-		throw new NotImplementedException ();
+		if (newBase === Math.E)
+			return Math.log (a);
+		return Math.log(a) / Math.log(newBase);
 	}
 	static Round (a: number): number
 	static Round (a: number, decimals: number): number
-	static Round (a: number, decimals?: number): number
+	static Round (a: number, decimals: number = 0): number
 	{
-		throw new NotImplementedException ();
+		if (decimals === 0)
+			return Math.round(a);
+		var s = Math.pow(10, decimals);
+		return Math.round(a * s) / s;
 	}
 	static Cosh (x: number): number
 	{
@@ -381,21 +393,54 @@ class Nullable<T> extends NObject
 	}
 }
 
+enum DateTimeKind
+{
+	Local,
+	Unspecified,
+	Utc
+}
+
 class DateTime extends NObject
 {
+	private dt: Date;
+	private kind: DateTimeKind;
+	get Kind(): DateTimeKind { return this.kind; }	
+	get Year(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCFullYear() : this.dt.getFullYear(); }
+	get Month(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCMonth()+1 : this.dt.getMonth()+1; }
+	get Day(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCDate() : this.dt.getDate(); }
+	constructor()
+	constructor(year: number, month: number, day: number)
+	constructor(year: number = 1, month: number = 1, day: number = 1)
+	{
+		super();
+		this.dt = new Date(year, month-1, day);
+		this.kind = DateTimeKind.Unspecified;
+	}	
+	ToString(): string
+	{
+		return this.kind === DateTimeKind.Utc ? this.dt.toUTCString() : this.dt.toString();
+	}
 	static get UtcNow(): DateTime
 	{
-		throw new NotImplementedException ();
+		var d = new DateTime();
+		d.dt = new Date();
+		d.kind = DateTimeKind.Utc;
+		return d;
 	}
-
 	static get Now(): DateTime
 	{
-		throw new NotImplementedException ();
+		var d = new DateTime();
+		d.dt = new Date();
+		d.kind = DateTimeKind.Local;
+		return d;
 	}
-
-	static op_Subtraction(endTime: DateTime, startTime: DateTime): TimeSpan
+	static op_Subtraction(x: DateTime, y: DateTime): TimeSpan
 	{
-		throw new NotImplementedException ();
+		return TimeSpan.FromSeconds ((x.dt.getTime() - y.dt.getTime()) / 1000);
+	}
+	static op_GreaterThanOrEqual(x: DateTime, y: DateTime): boolean
+	{
+		return x.dt >= y.dt;
 	}
 }
 
@@ -963,7 +1008,7 @@ class Regex extends NObject
 	constructor(pattern: string)
 	{
 		super();
-		this.re = new RegExp(pattern);
+		this.re = new RegExp(pattern, "g");
 	}
 
 	Match(input: string): Match
@@ -971,9 +1016,15 @@ class Regex extends NObject
 		var m = new Match();
 		var r = this.re.exec(input);
 		if (r) {
+			var loc = r.index;
 			for (var i = 0; i < r.length; ++i) {
-				if (r[i].constructor == String)
-					m.Groups.Add (new Group (r[i], i));
+				var text = "";
+				if (typeof r[i] === "undefined") {}
+				else if (r[i].constructor === String)
+					text = r[i];
+				m.Groups.Add (new Group (text, loc));
+				if (i !== 0)
+					loc += text.length;
 			}
 			m.Success = true;
 		}
@@ -982,7 +1033,7 @@ class Regex extends NObject
 
 	Replace(input: string, repl: string): string
 	{
-		throw new NotImplementedException ();
+		return input.replace(this.re, repl);
 	}
 
 	IsMatch(input: string): boolean
@@ -1005,14 +1056,14 @@ class Group extends NObject
 	constructor(value: string, index: number)
 	{
 		super();
-		this.Value = value;
+		this.Value = value||"";
+		this.Length = this.Value.length;
 		this.Index = index;
 	}
 }
 
 class Stream extends NObject
 {
-
 }
 
 class MemoryStream extends Stream
@@ -1041,7 +1092,6 @@ class TextWriter extends NObject implements IDisposable
 	}
 	Dispose(): void
 	{
-
 	}
 }
 
@@ -1357,18 +1407,15 @@ class Debug extends NObject
 {
 	static WriteLine (text: string): void
 	{
-
+		console.log(text);
 	}
 }
 
 class Thread extends NObject
 {
-	static CurrentThread: Thread = new Thread();
-
 	private static nextId: number = 1;
-
+	static CurrentThread: Thread = new Thread();	
 	ManagedThreadId: number;
-
 	constructor()
 	{
 		super();
@@ -1388,12 +1435,9 @@ class Monitor extends NObject
 {
 	static Enter(lock: any): void
 	{
-
 	}
-
 	static Exit(lock: any): void
 	{
-
 	}
 }
 
