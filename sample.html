@@ -1,0 +1,23 @@
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<script src="sample.js"></script>
+	<title>Netjs Test</title>
+	<style>
+		body { font-family: sans-serif; }
+	</style>
+</head>
+<body>
+
+	<h1>Netjs Test</h1>
+
+	<p>Age is <span id="age">?</span>.</p>
+
+	<script>
+		var p = new Person();
+		p.DateOfBirth = new DateTime(1980, 7, 23);
+		document.getElementById("age").textContent = p.Age;
+	</script>
+
+</body>
+</html>
