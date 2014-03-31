@@ -1969,46 +1969,55 @@ namespace Netjs
 			}
 		}
 
-		class ExpandIndexers : DepthFirstAstVisitor, IAstTransform
+		class ExpandIndexers : IAstTransform
 		{
 			public void Run (AstNode compilationUnit)
 			{
-				compilationUnit.AcceptVisitor (this);
+				var ei = new EI ();
+				ei.Changed = true;
+				while (ei.Changed) {
+					ei.Changed = false;
+					compilationUnit.AcceptVisitor (ei);
+				}
 			}
 
-			public override void VisitIndexerExpression (IndexerExpression indexerExpression)
-			{
-				base.VisitIndexerExpression (indexerExpression);
+			class EI : DepthFirstAstVisitor {
+				public bool Changed = false;
+				public override void VisitIndexerExpression (IndexerExpression indexerExpression)
+				{
+					base.VisitIndexerExpression (indexerExpression);
+
+					var tr = GetTypeRef (indexerExpression.Target);
+
+					var mr = indexerExpression.Target as MemberReferenceExpression;
+
+					if (tr != null && (tr.IsArray || tr.FullName == "System.String"))
+						return;
+
+					var t = indexerExpression.Target;
+
+					var pa = indexerExpression.Parent as AssignmentExpression;
+
+					if (pa != null && pa.Left == indexerExpression) {
+
+						var s = new InvocationExpression (
+							new MemberReferenceExpression (t.Clone(), "set_Item"),
+							indexerExpression.Arguments.Concat (new[]{pa.Right.Clone()}).Select (x => x.Clone ()));
+
+						pa.ReplaceWith (s);
 
 
-				var tr = GetTypeRef (indexerExpression.Target);
 
-				if (tr != null && (tr.IsArray || tr.FullName == "System.String"))
-					return;
+					} else {
 
-				var t = indexerExpression.Target;
+						var s = new InvocationExpression (
+							new MemberReferenceExpression (t.Clone(), "get_Item"),
+							indexerExpression.Arguments.Select (x => x.Clone ()));
 
-				var pa = indexerExpression.Parent as AssignmentExpression;
-
-				if (pa != null && pa.Left == indexerExpression) {
-
-					var s = new InvocationExpression (
-						new MemberReferenceExpression (t.Clone(), "set_Item"),
-						indexerExpression.Arguments.Concat (new[]{pa.Right.Clone()}).Select (x => x.Clone ()));
-
-					pa.ReplaceWith (s);
-
-
-
-				} else {
-
-					var s = new InvocationExpression (
-						new MemberReferenceExpression (t.Clone(), "get_Item"),
-						indexerExpression.Arguments.Select (x => x.Clone ()));
-
-					indexerExpression.ReplaceWith (s);
+						indexerExpression.ReplaceWith (s);
+					}
+					Changed = true;
 				}
-
 			}
 		}
 
@@ -2047,6 +2056,18 @@ namespace Netjs
 						break;
 					case BinaryOperatorType.InEquality:
 						name = "op_Inequality";
+						break;
+					case BinaryOperatorType.LessThan:
+						name = "op_LessThan";
+						break;
+					case BinaryOperatorType.LessThanOrEqual:
+						name = "op_LessThanOrEqual";
+						break;
+					case BinaryOperatorType.GreaterThan:
+						name = "op_GreaterThan";
+						break;
+					case BinaryOperatorType.GreaterThanOrEqual:
+						name = "op_GreaterThanOrEqual";
 						break;
 					}
 
@@ -2118,6 +2139,11 @@ namespace Netjs
 			var fr = expr.Annotation<FieldDefinition> ();
 			if (fr != null) {
 				return fr.FieldType;
+			}
+
+			var pr = expr.Annotation<PropertyDefinition> ();
+			if (pr != null) {
+				return pr.PropertyType;
 			}
 
 			return null;
