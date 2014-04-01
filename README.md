@@ -137,7 +137,7 @@ Netjs is not the first project that compiles .NET IL to JavaScript. It is, in fa
 
 Microsoft built their own named Project V. It was glorious, as was the amount of JavaScript it created. "Hello world" generated gigabytes of JavaScript. Serisously, I once calculated that the heat death of the universe would occur before it had finished outputting a foreach loop. You see, the JavaScript it output rigorously obeyed .NET semantics - it was as if a virtual machine vomitted all over your code. Glorious. Anyway, Microsoft cancelled the project.
 
-Then the world was blessed with [JSIL][]. This is Project V done right. It's still a virtual machine vomitting all over your code, but it's a clean nice kind of vomit that generates megabytes of JavaScript instead of gigabytes. It's powerful enough to compile the BCL and MonoGame. It's going to generate a lot code and you're might end up with a loading screen, but it does its job well.
+Then the world was blessed with [JSIL][]. This is Project V done right. It's still a virtual machine vomitting all over your code, but it's a clean nice kind of vomit that is measured in megabytes instead of gigabytes. It's powerful enough to compile the BCL and MonoGame - a truly powerful compiler. It's going to generate a lot code and you're might end up with a loading screen, but it does its job well.
 
 
 ## Limitations
@@ -151,13 +151,19 @@ Then the world was blessed with [JSIL][]. This is Project V done right. It's sti
 * **Async** does not work
 * **Gotos** only sometimes work
 * **Regexes** have some problems:
-	- **Named groups** don't work
+	- Named groups don't work (we rely on the browser's regex implementation)
 	- Match Group Index only works if you capture everything
-* Integer casts with the expactation of performing a Truncate operation don't work
+* Integer casts with the expectation of performing a Truncate operation don't work ()
 * **Seriously,** watch it with those overloads
 
 If any of these bother you, then please go use [JSIL][]. 
 
 [JSIL]: http://jsil.com
+
+
+## Thank you!
+
+Netjs owes the majority of its intelligence to [NRefactory][] and [ILSpy][]'s decompiler. Without these projects, Netjs would not exist. Thank you!
+
 
 
