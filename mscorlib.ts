@@ -1319,7 +1319,12 @@ class Enumerable extends NObject
 
 	static Distinct<T>(e: IEnumerable<T>): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		var d = new Dictionary<T,T> ();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			d.set_Item(i.Current, null);
+		}
+		return d.Keys;
 	}
 
 	static Cast<T>(e: IEnumerable<T>): IEnumerable<T>
@@ -1327,64 +1332,70 @@ class Enumerable extends NObject
 		return e;
 	}
 
-	static FirstOrDefault<T>(e: T[]): T
 	static FirstOrDefault<T>(e: IEnumerable<T>): T
 	static FirstOrDefault<T>(e: IEnumerable<T>, p: (a: T)=>boolean): T
-	static FirstOrDefault<T>(e: any, p?: (a: T)=>boolean): T
+	static FirstOrDefault<T>(e: any, p: (a: T)=>boolean = null): T
 	{
-		throw new NotImplementedException ();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (p === null || p(i.Current))
+				return i.Current;
+		}
+		return null;
 	}
 
-	static First<T>(e: T[]): T
 	static First<T>(e: IEnumerable<T>): T
 	static First<T>(e: IEnumerable<T>, p: (a: T)=>boolean): T
-	static First<T>(e: any, p?: (a: T)=>boolean): T
+	static First<T>(e: any, p: (a: T)=>boolean = null): T
 	{
-		throw new NotImplementedException ();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (p === null || p(i.Current))
+				return i.Current;
+		}
+		throw new Exception("Not found");
 	}
 
-	static Any<T>(e: IEnumerable<T>, s: (a: T)=>boolean): boolean
-	static Any<T>(e: T[], s: (a: T)=>boolean): boolean
-	static Any<T>(e: any, s: (a: T)=>boolean): boolean
+	static Any<T>(e: IEnumerable<T>, p: (a: T)=>boolean): boolean
 	{
-		throw new NotImplementedException ();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (p(i.Current))
+				return true;
+		}
+		return false;
 	}
 
-	static All<T>(e: IEnumerable<T>, s: (a: T)=>boolean): boolean
-	static All<T>(e: T[], s: (a: T)=>boolean): boolean
-	static All<T>(e: any, s: (a: T)=>boolean): boolean
+	static All<T>(e: IEnumerable<T>, p: (a: T)=>boolean): boolean
 	{
-		throw new NotImplementedException ();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (!p(i.Current))
+				return false;
+		}
+		return true;
 	}
 
 	static Count<T>(e: IEnumerable<T>): number
-	static Count<T>(e: T[]): number
-	static Count<T>(e: any): number
 	{
 		throw new NotImplementedException ();
 	}
 
 	static Sum<T>(e: IEnumerable<T>, s: (a: T)=>number): number
-	static Sum<T>(e: T[], s: (a: T)=>number): number
-	static Sum<T>(e: any, s: (a: T)=>number): number
 	{
 		throw new NotImplementedException ();
 	}
 
 	static Max<T>(e: IEnumerable<T>): number
-	static Max<T>(e: T[]): number
 	static Max<T>(e: IEnumerable<T>, s: (a: T)=>number): number
-	static Max<T>(e: T[], s: (a: T)=>number): number
-	static Max<T>(e: any, s?: (a: T)=>number): number
+	static Max<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
 		throw new NotImplementedException ();
 	}
 
 	static Min<T>(e: IEnumerable<T>): number
-	static Min<T>(e: T[]): number
 	static Min<T>(e: IEnumerable<T>, s: (a: T)=>number): number
-	static Min<T>(e: T[], s: (a: T)=>number): number
-	static Min<T>(e: any, s?: (a: T)=>number): number
+	static Min<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
 		throw new NotImplementedException ();
 	}
