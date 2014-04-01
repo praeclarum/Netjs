@@ -6,17 +6,17 @@ Netjs is a .NET to TypeScript and JavaScript compiler. It uses multiple stages t
 
 You start by compiling whatever code you want into its own assembly. Portable Class Libraries work great for this, but it really doesn't matter. You can even pass EXEs.
 
-	netjs Library.dll
+    netjs Library.dll
 
 This produces a TypeScript file. You can use this file as is if the rest of your app is written in TypeScript.
 
 If you want JavaScript (with no dependencies), then pass this file along with a tiny mscorlib to the TypeScript compiler:
 
-	tcs -t ES5 mscorlib.ts Library.ts --out Library.js
+    tcs -t ES5 mscorlib.ts Library.ts --out Library.js
 
 You can now include Library.js in any app because it is fully linked (you will get build errors if anything is missing).
 
-	<script src="Library.js" type="text/javascript"></source>
+    <script src="Library.js" type="text/javascript"></source>
 
 And that's it. You can write apps and reuse the portable parts in web apps!
 
@@ -27,17 +27,17 @@ And that's it. You can write apps and reuse the portable parts in web apps!
 
 Download it:
 
-	git clone https://github.com/praeclarum/Netjs.git
+    git clone https://github.com/praeclarum/Netjs.git
 
 #### Mac
 
-	sudo make install
+    sudo make install
 
 This will install a soft link called `netjs` in `/usr/bin` to the script `netjs.sh`.
 
 #### Windows
 
-	msbuild
+    msbuild
 
 `Netjs.exe` will be built in `Netjs\bin\Debug`. You can copy this executable to someplace in your PATH to make it readily available.
 
@@ -50,7 +50,7 @@ Node is needed by the TypeScript compiler.
 
 ### Install TypeScript
 
-	sudo npm install -g typescript
+    sudo npm install -g typescript
 
 
 
@@ -61,13 +61,13 @@ Netjs works with .NET assemblies built with any compiler ([limitations][Limitati
 
 ### Compile to TypeScript
 
-	netjs Library.dll
+    netjs Library.dll
 
 This will output a TypeScript file named `Library.ts` containing all the code from `Library.dll` and any other assemblies referenced in its directory.
 
 ### Compile to JavaScript
 
-	tsc -t ES5 mscorlib.ts Library.ts --out Library.js 
+    tsc -t ES5 mscorlib.ts Library.ts --out Library.js 
 
 This compiles the library code along with a small implementation of mscorlib. The files are merged and output as a single JavaScript file `Library.js`.
 
@@ -84,37 +84,37 @@ Well, that's almost true - JavaScript's idioms don't exactly match .NET's. Howev
 
 When I declare a class with properties in C#,
 
-	class Person {
-		public DateTime DateOfBirth { get; set; }
-		public int Age {
-			get {
-				var now = DateTime.Now;
-				return (new DateTime (dob.Year,now.Month,now.Day) >= dob) ? 
-					now.Year - dob.Year : 
-					now.Year - dob.Year - 1;
-			}
-		}
-	}
+    class Person {
+        public DateTime DateOfBirth { get; set; }
+        public int Age {
+            get {
+                var now = DateTime.Now;
+                return (new DateTime (dob.Year,now.Month,now.Day) >= dob) ? 
+                    now.Year - dob.Year : 
+                    now.Year - dob.Year - 1;
+            }
+        }
+    }
 
 The code generated should be idiomatic JavaScript. And it is:
 
-	var Person = (function (_super) {
-	    __extends(Person, _super);
-	    function Person() {
-	        _super.call(this);
-	        this.DateOfBirth = null;
-	    }
-	    Object.defineProperty(Person.prototype, "Age", {
-	        get: function () {
-	            var now = DateTime.Now;
-	            var flag = new DateTime(this.DateOfBirth.Year, now.Month, now.Day) >= this.DateOfBirth;
-	            return (!flag) ? (now.Year - this.DateOfBirth.Year - 1) : (now.Year - this.DateOfBirth.Year);
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    return Person;
-	})(NObject);
+    var Person = (function (_super) {
+        __extends(Person, _super);
+        function Person() {
+            _super.call(this);
+            this.DateOfBirth = null;
+        }
+        Object.defineProperty(Person.prototype, "Age", {
+            get: function () {
+                var now = DateTime.Now;
+                var flag = DateTime.op_GreaterThanOrEqual(new DateTime(this.DateOfBirth.Year, now.Month, now.Day), this.DateOfBirth);
+                return (!flag) ? (now.Year - this.DateOfBirth.Year - 1) : (now.Year - this.DateOfBirth.Year);
+            },
+            enumerable: true,
+            configurable: true
+        });
+        return Person;
+    })(NObject);
 
 There's a tiny wrapper placed around the class definition that is typical of JavaScript code avoiding name conflicts. There is the use of a tiny `__extends` function that establishes a class hierarchy using JavaScript's prototype chain. The rest is standard JavaScript.
 
@@ -122,11 +122,11 @@ I want to make life easier for the machine by generating clean idiomatic code, b
 
 When it comes time to use the Person class from JavaScript, that code should also be clean and idiomatic:
 
-	<script>
-		var p = new Person();
-		p.DateOfBirth = new DateTime(1980, 7, 23);
-		document.getElementById("age").textContent = p.Age;
-	</script>
+    <script>
+        var p = new Person();
+        p.DateOfBirth = new DateTime(1980, 7, 23);
+        document.getElementById("age").textContent = p.Age;
+    </script>
 
 
 
@@ -151,8 +151,8 @@ Then the world was blessed with [JSIL][]. This is Project V done right. It's sti
 * **Async** does not work
 * **Gotos** only sometimes work
 * **Regexes** have some problems:
-	- Named groups don't work (we rely on the browser's regex implementation)
-	- Match Group Index only works if you capture everything
+    - Named groups don't work (we rely on the browser's regex implementation)
+    - Match Group Index only works if you capture everything
 * Integer casts with the expectation of performing a Truncate operation don't work ()
 * **Seriously,** watch it with those overloads
 
