@@ -48,7 +48,7 @@ namespace Netjs
 			yield return new AddAbstractMethodBodies ();
 			yield return new MergeCtors ();
 			yield return new EnsureAtLeastOneCtor ();
-			yield return new DealWithStaticCtors ();
+			yield return new StaticCtorsToMethods ();
 			yield return new PropertiesToMethods ();
 			yield return new InitializeFields ();
 			yield return new MakeSuperCtorFirst ();
@@ -85,7 +85,34 @@ namespace Netjs
 			yield return new MakeWhileLoop ();
 			yield return new GotoRemoval ();
 			yield return new OrderClasses ();
+			yield return new CallStaticCtors ();
 			yield return new AddReferences ();
+		}
+
+		class CallStaticCtors : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+
+				var ts = compilationUnit.Descendants.OfType<TypeDeclaration> ().Where (x => x.Members.Any (y => y.Name.EndsWith ("_cctor", StringComparison.Ordinal))).ToList ();
+
+				if (ts.Count == 0)
+					return;
+
+				var p = ts [0].Parent;
+				var b = new BlockStatement ();
+
+				foreach (var t in ts) {
+					var cctor = t.Members.First (y => y.Name.EndsWith ("_cctor", StringComparison.Ordinal));
+
+					b.AddChild (new ExpressionStatement (new InvocationExpression (
+						new MemberReferenceExpression (new TypeReferenceExpression (new SimpleType (t.Name)), cctor.Name)
+					)), BlockStatement.StatementRole);
+				}
+
+				p.AddChild (b, SyntaxTree.MemberRole);
+			}
 		}
 
 		class NewArraysNeedDefaultValues : DepthFirstAstVisitor, IAstTransform
@@ -3066,7 +3093,7 @@ namespace Netjs
 			}
 		}
 
-		class DealWithStaticCtors : DepthFirstAstVisitor, IAstTransform
+		class StaticCtorsToMethods : DepthFirstAstVisitor, IAstTransform
 		{
 			public void Run (AstNode compilationUnit)
 			{
@@ -3080,59 +3107,15 @@ namespace Netjs
 				var ctor = typeDeclaration.Members.OfType<ConstructorDeclaration> ().FirstOrDefault (x => (x.Modifiers & Modifiers.Static) != 0);
 
 				if (ctor != null) {
-
-					var fctor = new FieldDeclaration {
-						Modifiers = Modifiers.Private | Modifiers.Static,
-						ReturnType = new PrimitiveType ("bool"),
-					};
-					fctor.Variables.Add (new VariableInitializer (typeDeclaration.Name + "_cctorRan", new PrimitiveExpression (false)));
-					var fref = new MemberReferenceExpression (new IdentifierExpression (typeDeclaration.Name), typeDeclaration.Name + "_cctorRan");
-
+				
 					var b = ctor.Body;
 					b.Remove ();
 					var mctor = new MethodDeclaration {
 						Name = typeDeclaration.Name + "_cctor",
-						Modifiers = Modifiers.Static | Modifiers.Private,
+						Modifiers = Modifiers.Static,
 						ReturnType = new PrimitiveType ("void"),
 						Body = b,
 					};
-
-					var ifr = new IfElseStatement (fref, new ReturnStatement ());
-
-					b.InsertChildBefore<Statement> (
-						b.Statements.FirstOrNullObject (),
-						ifr,
-						BlockStatement.StatementRole);
-					b.InsertChildAfter (
-						ifr,
-						new ExpressionStatement (
-							new AssignmentExpression (fref.Clone (), new PrimitiveExpression (true))),
-						BlockStatement.StatementRole);
-
-
-
-					foreach (var m in typeDeclaration.Members.OfType <MethodDeclaration> ().Where (x => (x.Modifiers & Modifiers.Static) != 0)) {
-
-						m.Body.InsertChildBefore<Statement> (
-							m.Body.Statements.FirstOrNullObject (),
-							new ExpressionStatement (new InvocationExpression (
-								new MemberReferenceExpression (new IdentifierExpression (typeDeclaration.Name), mctor.Name))),
-							BlockStatement.StatementRole);
-
-					}
-
-					foreach (var m in typeDeclaration.Members.OfType<ConstructorDeclaration> ().Where (x => (x.Modifiers & Modifiers.Static) == 0)) {
-						m.Body.InsertChildBefore<Statement> (
-							m.Body.Statements.FirstOrNullObject (),
-							new ExpressionStatement (new InvocationExpression (
-								new MemberReferenceExpression (new IdentifierExpression (typeDeclaration.Name), mctor.Name))),
-							BlockStatement.StatementRole);
-					}
-
-
-					typeDeclaration.Members.InsertBefore (
-						ctor,
-						fctor);
 
 					ctor.ReplaceWith (mctor);
 
@@ -3735,13 +3718,13 @@ namespace Netjs
 				if (IsDelegate (p.Type))
 					continue;
 
-				//				var nul	lc = new UnaryOperatorExpression (UnaryOperatorType.Not, new IdentifierExpression (newPs [i].Name));
+				var nullc = new UnaryOperatorExpression (UnaryOperatorType.Not, new IdentifierExpression (newPs [i].Name));
 				var ctor = new IsExpression {
 					Expression = new IdentifierExpression (newPs [i].Name),
 					Type = GetJsConstructorType (p.Type)
 				};
-//				var norc = new BinaryOperatorExpression (nullc, BinaryOperatorType.ConditionalOr, ctor);
-				e = new BinaryOperatorExpression (e, BinaryOperatorType.ConditionalAnd, ctor);
+				var norc = new BinaryOperatorExpression (nullc, BinaryOperatorType.ConditionalOr, ctor);
+				e = new BinaryOperatorExpression (e, BinaryOperatorType.ConditionalAnd, norc);
 			}
 
 			return e;
