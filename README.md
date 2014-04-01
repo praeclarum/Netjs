@@ -158,12 +158,16 @@ Then the world was blessed with [JSIL][]. This is Project V done right. It's sti
 
 If any of these bother you, then please go use [JSIL][]. 
 
-[JSIL]: http://jsil.com
+[JSIL]: http://jsil.org
 
 
 ## Thank you!
 
-Netjs owes the majority of its intelligence to [NRefactory][] and [ILSpy][]'s decompiler. Without these projects, Netjs would not exist. Thank you!
+Netjs owes the majority of its intelligence to [Mono.Cecil][cecil], [NRefactory][], and [ILSpy][]'s decompiler. Without these projects, Netjs would not exist. Thank you!
+
+[cecil]: http://mono-project.com/Cecil
+[NRefactory]: https://github.com/icsharpcode/NRefactory
+[ILSpy]: http://ilspy.net
 
 
 
