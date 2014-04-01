@@ -153,7 +153,14 @@ class NNumber
 	}
 	static TryParse(str: string, pvalue: number[]): boolean
 	{
-		throw new NotImplementedException ();
+		try {
+			pvalue[0] = parseFloat (str);
+			return true;
+		}
+		catch (ex) {
+			pvalue[0] = 0;
+			return false;
+		}
 	}
 	static IsNaN(num: number): boolean
 	{
@@ -1265,10 +1272,14 @@ class Enumerable extends NObject
 
 	static Select<T,U>(e: IEnumerable<T>, selector: (T)=>U): IEnumerable<U>
 	{
-		throw new NotImplementedException ();
+		var r = new List<U>();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			r.Add(selector(i.Current));
+		}
+		return r;
 	}
 
-	static SelectMany<T,U>(e: T[], selector: (T)=>IEnumerable<U>): IEnumerable<U>
 	static SelectMany<TSource,TResult>(e: IEnumerable<TSource>, selector: (TSource)=>IEnumerable<TResult>): IEnumerable<TResult>
 	static SelectMany<TSource,TResult>(e: IEnumerable<TSource>, selector: (TSource, number)=>IEnumerable<TResult>): IEnumerable<TResult>
 	static SelectMany<TSource,TCollection,TResult>(e: IEnumerable<TSource>, selector: (TSource)=>IEnumerable<TCollection>, comb: (TSource,TCollection)=>TResult): IEnumerable<TResult>
@@ -1277,9 +1288,7 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();
 	}
 
-	static Where<T>(e: T[], p: (a: T)=>boolean): IEnumerable<T>
 	static Where<T>(e: IEnumerable<T>, p: (a: T)=>boolean): IEnumerable<T>
-	static Where<T>(e: any, p: (a: T)=>boolean): IEnumerable<T>
 	{
 		throw new NotImplementedException ();
 	}
@@ -1293,23 +1302,17 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();		
 	}
 
-	static Concat<T>(x: T[], y: T[]): IEnumerable<T>
 	static Concat<T>(x: IEnumerable<T>, y: IEnumerable<T>): IEnumerable<T>
-	static Concat<T>(x: any, y: any): IEnumerable<T>
 	{
 		throw new NotImplementedException ();
 	}
 
-	static Take<T>(x: T[], count: number): IEnumerable<T>
 	static Take<T>(x: IEnumerable<T>, count: number): IEnumerable<T>
-	static Take<T>(x: any, count: number): IEnumerable<T>
 	{
 		throw new NotImplementedException ();
 	}
 
-	static Skip<T>(x: T[], count: number): IEnumerable<T>
 	static Skip<T>(x: IEnumerable<T>, count: number): IEnumerable<T>
-	static Skip<T>(x: any, count: number): IEnumerable<T>
 	{
 		throw new NotImplementedException ();
 	}
