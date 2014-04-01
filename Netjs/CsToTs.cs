@@ -2513,25 +2513,30 @@ namespace Netjs
 				base.VisitTryCatchStatement (tryCatchStatement);
 
 				var catches = tryCatchStatement.CatchClauses.ToList ();
+				if (catches.Count == 0)
+					return;
 
-
+				var varName = catches.Where (x => !string.IsNullOrEmpty (x.VariableName)).Select (x => x.VariableName).FirstOrDefault ();
+				if (varName == null) {
+					varName = "_ex";
+				}
 
 				//
 				// Fix first
 				//
 				foreach (var c in catches) {
 					if (string.IsNullOrEmpty (c.VariableName)) {
-						c.VariableName = "_ex";
+						c.VariableName = varName;
 					}
 				}
 
 				//
 				// Merge them
 				//
-				if (catches.Count > 1) {
+				if (catches.Count > 0) {
 					var body = new BlockStatement ();
 					var newCatch = new CatchClause {
-						VariableName = "_ex",
+						VariableName = varName,
 						Body = body,
 					};
 
@@ -2542,7 +2547,7 @@ namespace Netjs
 						var cbody = c.Body;
 						cbody.Remove ();
 
-						var iff = new IfElseStatement (GetNotNullTypeCheck ("_ex", c.Type), cbody);
+						var iff = new IfElseStatement (GetNotNullTypeCheck (varName, c.Type), cbody);
 
 						if (lastIf == null)
 							body.Add (iff);
@@ -2554,7 +2559,7 @@ namespace Netjs
 						c.Remove ();
 					}
 
-					var rethrow = new ThrowStatement (new IdentifierExpression ("_ex"));
+					var rethrow = new ThrowStatement (new IdentifierExpression (varName));
 
 					if (lastIf == null)
 						body.Add (rethrow);
