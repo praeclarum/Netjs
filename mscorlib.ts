@@ -447,7 +447,6 @@ class DateTime extends NObject
 class TimeSpan extends NObject
 {
 	private ticks: number;
-
 	constructor(ticks: number)
 	{
 		super();
@@ -455,19 +454,19 @@ class TimeSpan extends NObject
 	}
 	get TotalDays(): number
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	get Days(): number
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	get Hours(): number
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	get Minutes(): number
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	get Seconds(): number
 	{
@@ -482,6 +481,10 @@ class TimeSpan extends NObject
 		var hours = days*24;
 		var minutes = 60*hours;
 		return TimeSpan.FromSeconds (60*minutes);
+	}
+	static op_GreaterThanOrEqual(x: TimeSpan, y: TimeSpan)
+	{
+		return x.ticks >= y.ticks;
 	}
 }
 
@@ -920,6 +923,7 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		var ks = this.GetKeyString (key);
 		if (this.values.hasOwnProperty(ks)) {
 			pvalue[0] = this.values[ks];
+			return true;
 		}
 		else {
 			pvalue[0] = null;
