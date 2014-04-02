@@ -16,7 +16,7 @@ If you want JavaScript (with no dependencies), then pass this file along with a 
 
 You can now include Library.js in any app because it is fully linked (you will get build errors if anything is missing).
 
-    <script src="Library.js" type="text/javascript"></source>
+    <script src="Library.js" type="text/javascript"></script>
 
 And that's it. You can write apps and reuse the portable parts in web apps!
 
