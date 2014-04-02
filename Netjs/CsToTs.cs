@@ -2016,8 +2016,6 @@ namespace Netjs
 
 					var tr = GetTypeRef (indexerExpression.Target);
 
-					var mr = indexerExpression.Target as MemberReferenceExpression;
-
 					if (tr != null && (tr.IsArray || tr.FullName == "System.String"))
 						return;
 
@@ -3718,7 +3716,7 @@ namespace Netjs
 				if (IsDelegate (p.Type))
 					continue;
 
-				var nullc = new UnaryOperatorExpression (UnaryOperatorType.Not, new IdentifierExpression (newPs [i].Name));
+				var nullc = new BinaryOperatorExpression (new IdentifierExpression (newPs [i].Name), BinaryOperatorType.Equality, new PrimitiveExpression (null));
 				var ctor = new IsExpression {
 					Expression = new IdentifierExpression (newPs [i].Name),
 					Type = GetJsConstructorType (p.Type)
