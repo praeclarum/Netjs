@@ -40,7 +40,8 @@ namespace Netjs
 				var a = args [i];
 				switch (a) {
 				case "--help":
-				case "-h":
+				case "-help":
+				case "-?":
 					config.ShowHelp = true;
 					break;
 				default:
@@ -62,6 +63,7 @@ namespace Netjs
 			if (config.ShowHelp) {
 				Console.WriteLine ("Netjs compiler, Copyright 2014 Frank A. Krueger");
 				Console.WriteLine ("netjs [options] assembly-file");
+				Console.WriteLine ("   -help                Lists all compiler options (short: -?)");
 				return;
 			}
 
