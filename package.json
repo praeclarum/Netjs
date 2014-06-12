@@ -1,0 +1,27 @@
+{
+  "name": "netjs",
+  "version": "0.1.0",
+  "description": ".NET to TypeScript and JavaScript compiler",
+  "main": "main.js",
+  "scripts": {
+    "test": "test.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/praeclarum/Netjs.git"
+  },
+  "keywords": [
+    "typescript",
+    "mono",
+    "compiler",
+    "translator",
+    "c#",
+    ".net"
+  ],
+  "author": "Frank A. Krueger",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/praeclarum/Netjs/issues"
+  },
+  "homepage": "https://github.com/praeclarum/Netjs"
+}

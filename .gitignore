@@ -1,8 +1,17 @@
 
 .DS_Store
+.dropbox.attr
 bin
 obj
+Work
 
 *.userprefs
 *.suo
 *.user
+
+sample.dll
+sample.js
+sample.ts
+
+Dependencies/closure
+
