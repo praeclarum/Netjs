@@ -170,4 +170,8 @@ Netjs owes the majority of its intelligence to [Mono.Cecil][cecil], [NRefactory]
 [ILSpy]: http://ilspy.net
 
 
+## License
 
+**The MIT License (MIT)**
+
+Please see <a href="LICENSE.txt">LICENSE.txt</a> for details.
