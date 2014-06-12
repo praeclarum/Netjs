@@ -407,6 +407,16 @@ enum DateTimeKind
 	Utc
 }
 
+enum DayOfWeek {
+    Sunday = 0,
+    Monday = 1,
+    Tuesday = 2,
+    Wednesday = 3,
+    Thursday = 4,
+    Friday = 5,
+    Saturday = 6
+}
+
 class DateTime extends NObject
 {
 	private dt: Date;
@@ -415,6 +425,7 @@ class DateTime extends NObject
 	get Year(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCFullYear() : this.dt.getFullYear(); }
 	get Month(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCMonth()+1 : this.dt.getMonth()+1; }
 	get Day(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCDate() : this.dt.getDate(); }
+	get DayOfWeek(): DayOfWeek { return this.dt.getDay(); }
 	constructor()
 	constructor(year: number, month: number, day: number)
 	constructor(year: number = 1, month: number = 1, day: number = 1)
