@@ -287,11 +287,21 @@ class NString
 	{
 		return str.toLowerCase ();
 	}
+	static Contains(str: string, sub: string): boolean
+	{
+		return str.indexOf (sub) >= 0;
+	}
 	static StartsWith(str: string, sub: string): boolean
 	static StartsWith(str: string, sub: string, comp: StringComparison): boolean
 	static StartsWith(str: string, sub: string, comp?: StringComparison): boolean
 	{
-		throw new NotImplementedException();
+		return str.indexOf (sub) === 0;
+	}
+	static EndsWith(str: string, sub: string): boolean
+	static EndsWith(str: string, sub: string, comp: StringComparison): boolean
+	static EndsWith(str: string, sub: string, comp?: StringComparison): boolean
+	{
+		return str.indexOf (sub) === str.length - sub.length;
 	}
 
 	static Format(provider: IFormatProvider, format: string, args: any[]): string;
@@ -1281,6 +1291,16 @@ class Enumerable extends NObject
 		return new List<T> ();
 	}
 
+	static Range(start: number, count: number): IEnumerable<number>
+	{
+		var end = start + count;
+		var r = new List<number> ();
+		for (var i = start; i < end; i++) {
+			r.Add (i);
+		}
+		return r;
+	}
+
 	static Select<T,U>(e: IEnumerable<T>, selector: (T)=>U): IEnumerable<U>
 	{
 		var r = new List<U>();
@@ -1305,6 +1325,10 @@ class Enumerable extends NObject
 	}
 
 	static OrderBy<T, U>(e: IEnumerable<T>, s: (a: T)=>U): IEnumerable<T>
+	{
+		throw new NotImplementedException ();		
+	}
+	static OrderByDescending<T, U>(e: IEnumerable<T>, s: (a: T)=>U): IEnumerable<T>
 	{
 		throw new NotImplementedException ();		
 	}
@@ -1343,6 +1367,28 @@ class Enumerable extends NObject
 		return e;
 	}
 
+	static OfType<U>(e: any): IEnumerable<U>
+	{
+		// Doesn't work. Stupid type erasure.
+		// var i = e.GetEnumerator();
+		// var r = new List<U>();
+		// while (i.MoveNext()) {
+		// 	if (i.Current instanceof U) r.Add (i.Current);
+		// }
+		// return r;
+		throw new NotImplementedException ();
+	}
+
+	static Contains<T>(e: IEnumerable<T>, val: T): boolean
+	{
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (i.Current === val)
+				return true;
+		}
+		return false;
+	}
+
 	static FirstOrDefault<T>(e: IEnumerable<T>): T
 	static FirstOrDefault<T>(e: IEnumerable<T>, p: (a: T)=>boolean): T
 	static FirstOrDefault<T>(e: any, p: (a: T)=>boolean = null): T
@@ -1353,6 +1399,36 @@ class Enumerable extends NObject
 				return i.Current;
 		}
 		return null;
+	}
+
+	static LastOrDefault<T>(e: IEnumerable<T>): T
+	static LastOrDefault<T>(e: IEnumerable<T>, p: (a: T)=>boolean): T
+	static LastOrDefault<T>(e: any, p: (a: T)=>boolean = null): T
+	{
+		var i = e.GetEnumerator();
+		var last : T = null;
+		while (i.MoveNext()) {
+			if (p === null || p(i.Current))
+				last = i.Current;
+		}
+		return last;
+	}
+
+	static Last<T>(e: IEnumerable<T>): T
+	static Last<T>(e: IEnumerable<T>, p: (a: T)=>boolean): T
+	static Last<T>(e: any, p: (a: T)=>boolean = null): T
+	{
+		var i = e.GetEnumerator();
+		var last : T = null;
+		var gotLast = false;
+		while (i.MoveNext()) {
+			if (p === null || p(i.Current)) {
+				last = i.Current;
+				gotLast = true;
+			}
+		}
+		if (gotLast) return last;
+		throw new Exception("Not found");
 	}
 
 	static First<T>(e: IEnumerable<T>): T
