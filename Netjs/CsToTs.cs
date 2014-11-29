@@ -1936,12 +1936,14 @@ namespace Netjs
 			"IndexOf",
 			"IndexOfAny",
 			"StartsWith",
+			"EndsWith",
 			"Substring",
 			"Trim",
 			"TrimStart",
 			"TrimEnd",
 			"Equals",
 			"Remove",
+			"Contains",
 		};
 
 		class SuperPropertiesToThis : DepthFirstAstVisitor, IAstTransform
@@ -2169,6 +2171,14 @@ namespace Netjs
 			var pr = expr.Annotation<PropertyDefinition> ();
 			if (pr != null) {
 				return pr.PropertyType;
+			}
+
+			var ie = expr as IndexerExpression;
+			if (ie != null) {
+				var it = GetTypeRef (ie.Target);
+				if (it != null && it.IsArray) {
+					return it.GetElementType ();
+				}
 			}
 
 			return null;
