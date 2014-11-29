@@ -902,7 +902,13 @@ namespace Netjs
 		public void VisitInvocationExpression(InvocationExpression invocationExpression)
 		{
 			StartNode(invocationExpression);
+			if (invocationExpression.Target is AnonymousMethodExpression) {
+				formatter.WriteToken ("(");
+			}
 			invocationExpression.Target.AcceptVisitor(this);
+			if (invocationExpression.Target is AnonymousMethodExpression) {
+				formatter.WriteToken (")");
+			}
 			Space(policy.SpaceBeforeMethodCallParentheses);
 			WriteCommaSeparatedListInParenthesis(invocationExpression.Arguments, policy.SpaceWithinMethodCallParentheses);
 			EndNode(invocationExpression);
