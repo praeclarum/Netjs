@@ -1321,35 +1321,80 @@ class Enumerable extends NObject
 
 	static Where<T>(e: IEnumerable<T>, p: (a: T)=>boolean): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		var r = new List<T>();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (p(i.Current))
+				r.Add(i.Current);
+		}
+		return r;
 	}
 
 	static OrderBy<T, U>(e: IEnumerable<T>, s: (a: T)=>U): IEnumerable<T>
 	{
-		throw new NotImplementedException ();		
+		var r = new List<T>();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			r.Add(i.Current);
+		}
+		r.array.sort(function(x, y) {
+			var sx = s(x);
+			var sy = s(y);
+			if (sx === sy) return 0;
+			if (sx < sy) return -1;
+			return 1;
+		});
+		return r;
 	}
 	static OrderByDescending<T, U>(e: IEnumerable<T>, s: (a: T)=>U): IEnumerable<T>
 	{
-		throw new NotImplementedException ();		
+		var r = new List<T>();
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			r.Add(i.Current);
+		}
+		r.array.sort(function(x, y) {
+			var sx = s(x);
+			var sy = s(y);
+			if (sx === sy) return 0;
+			if (sx < sy) return 1;
+			return -1;
+		});
+		return r;
 	}
 	static ThenBy<T, U>(e: IEnumerable<T>, s: (a: T)=>U): IEnumerable<T>
 	{
-		throw new NotImplementedException ();		
+		return Enumerable.OrderBy<T, U>(e, s);
 	}
 
 	static Concat<T>(x: IEnumerable<T>, y: IEnumerable<T>): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		var r = new List<T> (x);
+		r.AddRange (y);
+		return r;
 	}
 
-	static Take<T>(x: IEnumerable<T>, count: number): IEnumerable<T>
+	static Take<T>(e: IEnumerable<T>, count: number): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		var r = new List<T>();
+		var i = e.GetEnumerator();
+		while (r.Count < count && i.MoveNext()) {
+			r.Add(i.Current);
+		}
+		return r;
 	}
 
-	static Skip<T>(x: IEnumerable<T>, count: number): IEnumerable<T>
+	static Skip<T>(e: IEnumerable<T>, count: number): IEnumerable<T>
 	{
-		throw new NotImplementedException ();
+		var r = new List<T>();
+		var i = e.GetEnumerator();
+		var j = 0;
+		while (i.MoveNext()) {
+			if (j >= count)
+				r.Add(i.Current);
+			j++;
+		}
+		return r;
 	}
 
 	static Distinct<T>(e: IEnumerable<T>): IEnumerable<T>
