@@ -87,6 +87,7 @@ namespace Netjs
 			yield return new OrderClasses ();
 			yield return new CallStaticCtors ();
 			yield return new AddReferences ();
+			yield return new NullableChecks ();
 		}
 
 		class CallStaticCtors : DepthFirstAstVisitor, IAstTransform
@@ -268,6 +269,29 @@ namespace Netjs
 					mr.Target.Clone (), invocationExpression.Arguments.First ().Clone ());
 
 				invocationExpression.ReplaceWith (i);
+			}
+		}
+
+		class NullableChecks : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				compilationUnit.AcceptVisitor (this);
+			}
+
+			public override void VisitMemberReferenceExpression (MemberReferenceExpression memberReferenceExpression)
+			{
+				base.VisitMemberReferenceExpression (memberReferenceExpression);
+
+				if (memberReferenceExpression.MemberName == "HasValue") {
+					var t = GetTypeRef (memberReferenceExpression.Target);
+					if (t != null && t.FullName.StartsWith ("System.Nullable`1", StringComparison.Ordinal)) {
+						var ta = memberReferenceExpression.Target;
+						ta.Remove ();
+						var n = new BinaryOperatorExpression (ta, BinaryOperatorType.InEquality, new NullReferenceExpression ());
+						memberReferenceExpression.ReplaceWith (n);
+					}
+				}
 			}
 		}
 
