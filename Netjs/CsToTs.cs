@@ -2533,9 +2533,9 @@ namespace Netjs
 					if (!composedType.HasNullableSpecifier)
 						return;
 
-					var st = new SimpleType ("Nullable", composedType.BaseType.Clone ());
-
-					composedType.ReplaceWith (st);
+          composedType.BaseType = new SimpleType ("Nullable", composedType.BaseType.Clone ());
+          if (composedType.ArraySpecifiers.Count == 0)
+            composedType.ReplaceWith (composedType.BaseType);
 				}
 			}
 		}
