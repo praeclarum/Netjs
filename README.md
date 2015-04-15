@@ -12,7 +12,7 @@ This produces a TypeScript file. You can use this file as is if the rest of your
 
 If you want JavaScript (with no dependencies), then pass this file along with a tiny mscorlib to the TypeScript compiler:
 
-    tcs -t ES5 mscorlib.ts Library.ts --out Library.js
+    tsc -t ES5 mscorlib.ts Library.ts --out Library.js
 
 You can now include Library.js in any app because it is fully linked (you will get build errors if anything is missing).
 
