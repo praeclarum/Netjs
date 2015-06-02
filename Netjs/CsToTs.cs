@@ -214,6 +214,14 @@ namespace Netjs
 			}
 		}
 
+		static bool NodeCollectionsEqual<T>(AstNodeCollection<T> anodes, AstNodeCollection<T> bnodes)
+			where T : AstNode
+		{
+			if (anodes.Count != bnodes.Count)
+				return false;
+			return anodes.Zip (bnodes, NodesEqual).All (x => x);
+		}
+
 		static bool NodesEqual(AstNode Variable, AstNode p)
 		{
 			if (Variable is IdentifierExpression) {
@@ -233,13 +241,27 @@ namespace Netjs
 				return NodesEqual (mr.Target, pmr.Target);
 			}
 
+			var tr = Variable as TypeReferenceExpression;
+			if (tr != null) {
+				var ptr = p as TypeReferenceExpression;
+				if (ptr == null)
+					return false;
+				return tr.Type.Equals (ptr.Type);
+			}
+
 			var th = Variable as ThisReferenceExpression;
 			if (th != null) {
 				var pth = p as ThisReferenceExpression;
 				return pth != null;
 			}
 
-			throw new NotImplementedException ();
+			var ind = Variable as IndexerExpression;
+			if (ind != null) {
+				var pind = p as IndexerExpression;
+				return pind != null && NodeCollectionsEqual (ind.Arguments, pind.Arguments);
+			}
+
+			throw new NotImplementedException (Variable + " (" + Variable.GetType () + ") == " + p);
 		}
 
 		class ReplaceObjectEquals : DepthFirstAstVisitor, IAstTransform
@@ -3057,8 +3079,12 @@ namespace Netjs
 
 				foreach (var p in methodDeclaration.Parameters.Where (IsRefParam).ToList ()) {
 
-					var pty =  ((ComposedType)p.Type).BaseType;
+					var pcompty = p.Type as ComposedType;
 
+					if (pcompty == null)
+						continue;
+
+					var pty = pcompty.BaseType;
 
 					var access = new IndexerExpression (new IdentifierExpression (p.Name), new PrimitiveExpression (0));
 					var ptd = GetTypeDef (pty);
@@ -3334,7 +3360,7 @@ namespace Netjs
 						}
 
 						if (baseInit == null) {
-							throw new NotSupportedException ("This initializer to this initializer not supported");
+							throw new NotSupportedException ("This initializer for ctor `"+typeDeclaration.Name+"/"+c.Parameters.Count+"` not supported");
 						}
 
 						foreach (var a in baseInit.Arguments) {
