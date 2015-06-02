@@ -83,6 +83,7 @@ namespace Netjs
 			mscorlib = AssemblyDefinition.ReadAssembly (typeof(String).Assembly.Location, parameters);
 			system = AssemblyDefinition.ReadAssembly (typeof(INotifyPropertyChanged).Assembly.Location, parameters);
 			systemCore = AssemblyDefinition.ReadAssembly (typeof(Enumerable).Assembly.Location, parameters);
+			systemDrawing = AssemblyDefinition.ReadAssembly (typeof(System.Drawing.Bitmap).Assembly.Location, parameters);
 
 			Step ("Decompiling IL to C#");
 			var context = new DecompilerContext (asm.MainModule);
@@ -153,6 +154,7 @@ namespace Netjs
 		AssemblyDefinition mscorlib;
 		AssemblyDefinition system;
 		AssemblyDefinition systemCore;
+		AssemblyDefinition systemDrawing;
 
 		readonly Dictionary<string, AssemblyDefinition> referencedAssemblies = new Dictionary<string, AssemblyDefinition> ();
 
@@ -169,6 +171,8 @@ namespace Netjs
 				return system;
 			case "System.Core":
 				return systemCore;
+			case "System.Drawing":
+				return systemDrawing;
 			default:
 				var n = name.Name;
 				AssemblyDefinition asm;
