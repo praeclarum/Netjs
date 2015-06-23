@@ -210,6 +210,7 @@ class NChar
 
 class NString
 {
+    static Empty = "";
 	static IndexOf (str: string, ch: number): number
 	static IndexOf (str: string, ch: number, startIndex: number): number
 	static IndexOf (str: string, sub: string): number
@@ -261,12 +262,22 @@ class NString
 	{
 		return length < 0 ? str.substr(startIndex) : str.substr(startIndex, length);
 	}
-	static Remove(str: string, startIndex: number): string
+	/*static Remove(str: string, startIndex: number): string*/
 	static Remove(str: string, startIndex: number, length: number): string
-	static Remove(str: string, startIndex: number, length?: number): string
+    {
+        if (typeof number === undefined)
+        {
+            return str.substring(startIndex);
+        }
+        else
+        {
+            return str.substring(0, startIndex - 1) + str.substring(startIndex + length);
+        }
+    }
+	/*static Remove(str: string, startIndex: number, length?: number): string
 	{
-		throw new NotImplementedException();
-	}	
+		throw new NotImplementedException(); // do we care that ts->js compiler will get rid of this syntactic sugar?
+	}*/
 	static Trim(str: string): string
 	{
 		return str.trim();
@@ -303,14 +314,23 @@ class NString
 	{
 		return str.indexOf (sub) === str.length - sub.length;
 	}
-
-	static Format(provider: IFormatProvider, format: string, args: any[]): string;
-	static Format(format: string, arg0: any): string;
-	static Format(format: string, arg0: any, arg1: any): string;
-	static Format(format: string, arg0: any, arg1: any, arg2: any): string;
-	static Format(providerOrFormat: any, formatOrArg0?: any, argsOrArg1?: any, arg2?: any): string
-	{
-		throw new NotImplementedException ();
+    
+	static Format(format: string, arg0: any, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any): string
+    {
+		if (arg0.constructor === Array)
+        {
+            var s = format,
+            i = arg0.length;
+            while (i--) {
+                s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arg0[i]);
+            }
+            return s;
+        }
+		else
+        {
+            var args = [arg0, arg1, arg2, arg3, arg4, arg5];
+            return NString.Format(format, args);
+        }
 	}
 	static IsNullOrEmpty(str: string): boolean
 	{
@@ -578,6 +598,22 @@ class Environment
 
 class Convert extends NObject
 {
+    static ToUInt16 (str: string) : number
+    {
+        var value = Number(str);
+        if (value < 0) value = 0;
+        if (value >= 0xFFFF) value = 0xFFFF;
+        return value;
+    }
+    
+    static ToUInt32 (str: string) : number
+    {
+        var value = Number(str);
+        if (value < 0) value = 0;
+        if (value >= 0xFFFFFFFF) value = 0xFFFFFFFF;
+        return value;
+    }
+    
 	static ToString (num: number, radix: number): string
 	static ToString (num: number, provider: IFormatProvider): string
 	static ToString (num: number, radixOrProvider: any): string
