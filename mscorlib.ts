@@ -798,12 +798,14 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 		return new List_Enumerator<T> (this);
 	}
 
-	Remove(item: T): void
+	Remove(item: T): boolean
 	{
 		var index = this.IndexOf(item);
 		if (index >= 0) {
 			this.RemoveAt(index);
+			return true;
 		}
+		return false;
 	}
 
 	RemoveAt(index: number): void
