@@ -828,6 +828,11 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 		this.array = new Array<T> ();
 	}
 
+	Sort(compare: (a: T, b: T) => number = null): void
+	{
+		this.array.sort(compare);
+	}
+
 	ToArray(): T[]
 	{
 		return this.array.slice(0);
