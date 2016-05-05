@@ -1644,21 +1644,40 @@ class Enumerable extends NObject
 
 	static Sum<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var sum = 0;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			sum += s != null ? s(i.Current) : <number><any>i.Current;
+		}
+		return sum;
 	}
 
 	static Max<T>(e: IEnumerable<T>): number
 	static Max<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	static Max<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var result = Number.MIN_VALUE;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			var value = s != null ? s(i.Current) : <number><any>i.Current;
+			if (value > result)
+				result = value;
+		}
+		return result;
 	}
 
 	static Min<T>(e: IEnumerable<T>): number
 	static Min<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	static Min<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var result = Number.MAX_VALUE;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			var value = s != null ? s(i.Current) : <number><any>i.Current;
+			if (value < result)
+				result = value;
+		}
+		return result;
 	}
 
 	static ToDictionary<T,K,V>(e: IEnumerable<T>, keySelector: (T)=>K, elementSelector: (T)=>V): Dictionary<K,V>
