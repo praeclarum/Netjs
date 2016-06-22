@@ -265,13 +265,13 @@ class NString
 	/*static Remove(str: string, startIndex: number): string*/
 	static Remove(str: string, startIndex: number, length: number): string
     {
-        if (typeof number === undefined)
+        if (typeof length === undefined)
         {
-            return str.substring(startIndex);
+            return str.substring(0, startIndex);
         }
         else
         {
-            return str.substring(0, startIndex - 1) + str.substring(startIndex + length);
+            return str.substring(0, startIndex) + str.substring(startIndex + length);
         }
     }
 	/*static Remove(str: string, startIndex: number, length?: number): string
@@ -314,8 +314,8 @@ class NString
 	{
 		return str.indexOf (sub) === str.length - sub.length;
 	}
-    
-	static Format(format: string, arg0: any, arg1: any, arg2: any, arg3: any, arg4: any, arg5: any): string
+
+	static Format(format: string, arg0?: any, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): string
     {
 		if (arg0.constructor === Array)
         {
