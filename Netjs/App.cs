@@ -31,6 +31,7 @@ namespace Netjs
 		{
 			public string MainAssembly = "";
 			public bool ShowHelp = false;
+			public bool ES3Compatible = false;
 		}
 
 		public static int Main (string[] args)
@@ -43,6 +44,10 @@ namespace Netjs
 				case "-help":
 				case "-?":
 					config.ShowHelp = true;
+					break;
+				case "--es3":
+				case "-es3":
+					config.ES3Compatible = true;
 					break;
 				default:
 					config.MainAssembly = a;
@@ -107,7 +112,7 @@ namespace Netjs
 			builder.RunTransformations ();
 
 			Step ("Translating C# to TypeScript");
-			new CsToTs ().Run (builder.SyntaxTree);
+			new CsToTs (config.ES3Compatible).Run (builder.SyntaxTree);
 
 			Step ("Writing");
 			using (var outputWriter = new StreamWriter (outPath)) {
