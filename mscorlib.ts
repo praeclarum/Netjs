@@ -719,6 +719,7 @@ interface IList<T>
 	set_Item(index: number, value: T): void;
 }
 
+//noinspection JSAnnotator
 class List<T> extends NObject implements IList<T>, IEnumerable<T>
 {
 	array: T[] = new Array<T> (); // Public to help the enumerator
@@ -815,6 +816,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	}
 }
 
+//noinspection JSAnnotator
 class Array_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
 {
 	private array: T[];
@@ -897,6 +899,7 @@ class HashSet<T> extends NObject implements IEnumerable<T>
 	}
 }
 
+//noinspection JSAnnotator
 class HashSet_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
 {
 	MoveNext(): boolean
