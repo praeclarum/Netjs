@@ -59,7 +59,6 @@ namespace Netjs
 			yield return new EnsureAtLeastOneCtor ();
 			yield return new StaticCtorsToMethods ();
 			yield return new PropertiesToMethods ();
-			yield return new AccessorsToInvocations ();
 			yield return new InitializeFields ();
 			yield return new MakeSuperCtorFirst ();
 			yield return new MergeOverloads ();
@@ -98,6 +97,7 @@ namespace Netjs
 			yield return new CallStaticCtors ();
 			yield return new AddReferences ();
 			yield return new NullableChecks ();
+			yield return new AccessorsToInvocations ();
 		}
 
 		class CallStaticCtors : DepthFirstAstVisitor, IAstTransform
@@ -3609,48 +3609,141 @@ namespace Netjs
 
 			public override void VisitPropertyDeclaration (PropertyDeclaration p)
 			{
-				if (p.Getter != null && p.Getter.Body.IsNull && p.Setter != null && p.Setter.Body.IsNull) {
+				if (p.Getter != null && p.Getter.Body.IsNull && p.Setter != null && p.Setter.Body.IsNull)
+				{
+					if (ES3Compatible)
+					{
+						if (p.GetParent<TypeDeclaration> ().ClassType == ClassType.Interface)
+						{
+							MakeCommonAccessors (p);
+						}
+						else
+						{
+							MakeES3CompatibleField (p);
+						}
+					}
+					else
+					{
+						MakeCommonField (p);
+					}
+				}
+				else
+				{
+					MakeCommonAccessors (p);
+				}
+			}
 
-					var f = new FieldDeclaration {
-						Modifiers = p.Modifiers,
-						ReturnType = p.ReturnType.Clone (),
-					};
-					f.Variables.Add (new VariableInitializer (p.Name));
-					p.ReplaceWith (f);
-				} else {
+			private void MakeES3CompatibleField (PropertyDeclaration p)
+			{
+				var fieldDeclaration = new FieldDeclaration
+				{
+					Modifiers = p.Modifiers | Modifiers.Private,
+					ReturnType = p.ReturnType.Clone ()
+				};
+				var fieldName = Char.ToLowerInvariant (p.Name[0]) + p.Name.Substring (1);
+				fieldDeclaration.Variables.Add (new VariableInitializer (fieldName));
 
-					foreach (var a in p.Children.OfType<Accessor> ()) {
-//						a.Body.Remove ();
+				foreach (var a in p.Children.OfType<Accessor> ())
+				{
+					MethodDeclaration fun;
+					if (a.Role == PropertyDeclaration.GetterRole)
+					{
+						var body = new BlockStatement ();
+						body.AddChild (
+							new ReturnStatement (
+								new MemberReferenceExpression (
+									new ThisReferenceExpression (), fieldName)),
+							BlockStatement.StatementRole);
 
-						var getter = a.Role == PropertyDeclaration.GetterRole;
-
-						var methodNamePrefix = (getter ? "get " : "set ");
-						if (ES3Compatible) methodNamePrefix = (getter ? ES3GetterPrefix : ES3SetterPrefix);
-
-						var fun = new MethodDeclaration {
-							Body = (BlockStatement)a.Body.Clone(),
-							Name = methodNamePrefix + p.Name,
-							Modifiers = p.Modifiers,
+						fun = new MethodDeclaration
+						{
+							Body = body,
+							Name = ES3GetterPrefix + p.Name,
+							Modifiers = a.Modifiers == Modifiers.None ? p.Modifiers : a.Modifiers,
+							ReturnType = p.ReturnType.Clone ()
 						};
-						fun.AddAnnotation (a);
+					}
+					else
+					{
+						var body = new BlockStatement ();
+						var valueParam = new ParameterDeclaration
+						{
+							Name = "value",
+							Type = p.ReturnType.Clone (),
+						};
+						body.AddChild (
+							new ExpressionStatement (
+								new AssignmentExpression (
+									new MemberReferenceExpression (
+										new ThisReferenceExpression (), fieldName),
+									new IdentifierExpression(valueParam.Name))),
+							BlockStatement.StatementRole);
 
-						if (getter) {
-							fun.ReturnType = p.ReturnType.Clone ();
-						}
-						else {
-							fun.ReturnType = new PrimitiveType ("void");
-							fun.Parameters.Add (new ParameterDeclaration {
-								Name = "value",
-								Type = p.ReturnType.Clone (),
-							});
-						}
+						fun = new MethodDeclaration
+						{
+							Body = body,
+							Name = ES3SetterPrefix + p.Name,
+							Modifiers = a.Modifiers == Modifiers.None ? p.Modifiers : a.Modifiers,
+							ReturnType = new PrimitiveType ("void")
+						};
+						fun.Parameters.Add (valueParam);
+					}
+					fun.AddAnnotation (a);
 
-						p.Parent.InsertChildAfter (p, fun, Roles.TypeMemberRole);
+					p.Parent.InsertChildAfter (p, fun, Roles.TypeMemberRole);
+				}
+
+				p.Parent.InsertChildAfter (p, fieldDeclaration, Roles.TypeMemberRole);
+
+				p.Remove ();
+			}
+
+			private void MakeCommonField (PropertyDeclaration p)
+			{
+				var f = new FieldDeclaration
+				{
+					Modifiers = p.Modifiers,
+					ReturnType = p.ReturnType.Clone (),
+				};
+				f.Variables.Add (new VariableInitializer (p.Name));
+				p.ReplaceWith (f);
+			}
+
+			private void MakeCommonAccessors (PropertyDeclaration p)
+			{
+				foreach (var a in p.Children.OfType<Accessor> ())
+				{
+					var getter = a.Role == PropertyDeclaration.GetterRole;
+
+					var methodNamePrefix = (getter ? "get " : "set ");
+					if (ES3Compatible) methodNamePrefix = (getter ? ES3GetterPrefix : ES3SetterPrefix);
+
+					var fun = new MethodDeclaration
+					{
+						Body = (BlockStatement) a.Body.Clone (),
+						Name = methodNamePrefix + p.Name,
+						Modifiers = p.Modifiers,
+					};
+					fun.AddAnnotation (a);
+
+					if (getter)
+					{
+						fun.ReturnType = p.ReturnType.Clone ();
+					}
+					else
+					{
+						fun.ReturnType = new PrimitiveType ("void");
+						fun.Parameters.Add (new ParameterDeclaration
+						{
+							Name = "value",
+							Type = p.ReturnType.Clone (),
+						});
 					}
 
-					p.Remove ();
-
+					p.Parent.InsertChildAfter (p, fun, Roles.TypeMemberRole);
 				}
+
+				p.Remove ();
 			}
 		}
 
