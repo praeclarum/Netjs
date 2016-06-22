@@ -25,6 +25,15 @@ namespace Netjs
 {
 	public class CsToTs : IAstTransform
 	{
+		public static bool ES3Compatible = false;
+		public const string ES3GetterPrefix = "Get";
+		public const string ES3SetterPrefix = "Set";
+
+		public CsToTs (bool es3Compatible = false)
+		{
+			ES3Compatible = es3Compatible;
+		}
+
 		public void Run (AstNode compilationUnit)
 		{
 			foreach (var t in GetTransforms ()) {
@@ -50,6 +59,7 @@ namespace Netjs
 			yield return new EnsureAtLeastOneCtor ();
 			yield return new StaticCtorsToMethods ();
 			yield return new PropertiesToMethods ();
+			yield return new AccessorsToInvocations ();
 			yield return new InitializeFields ();
 			yield return new MakeSuperCtorFirst ();
 			yield return new MergeOverloads ();
@@ -2230,6 +2240,80 @@ namespace Netjs
 			return null;
 		}
 
+		class AccessorsToInvocations : DepthFirstAstVisitor, IAstTransform
+		{
+			public void Run (AstNode compilationUnit)
+			{
+				if (ES3Compatible) // otherwise usual accessors are used
+				{
+					compilationUnit.AcceptVisitor (this);
+				}
+			}
+
+			public override void VisitMemberReferenceExpression (MemberReferenceExpression memberReferenceExpression)
+			{
+				base.VisitMemberReferenceExpression (memberReferenceExpression);
+
+				var methodDef = GetMethodDefinition (memberReferenceExpression);
+
+				if (methodDef != null)
+				{
+					if (methodDef.IsGetter)
+					{
+						var getterInvocation = new InvocationExpression (
+							new MemberReferenceExpression (
+								memberReferenceExpression.Target.Clone (),
+								ES3GetterPrefix + memberReferenceExpression.MemberName));
+						memberReferenceExpression.ReplaceWith (getterInvocation);
+					}
+				}
+			}
+
+			public override void VisitAssignmentExpression (AssignmentExpression assignmentExpression)
+			{
+				base.VisitAssignmentExpression (assignmentExpression);
+
+				var leftExpression = assignmentExpression.Left as MemberReferenceExpression;
+
+				if (leftExpression != null)
+				{
+					var methodDef = GetMethodDefinition (leftExpression);
+
+					if (methodDef != null)
+					{
+						if (methodDef.IsSetter)
+						{
+							var setterInvocation = new InvocationExpression (
+								new MemberReferenceExpression (
+									leftExpression.Target.Clone (),
+									ES3SetterPrefix + leftExpression.MemberName),
+								assignmentExpression.Right.Clone ());
+							assignmentExpression.ReplaceWith (setterInvocation);
+						}
+					}
+				}
+			}
+
+			MethodDefinition GetMethodDefinition (IAnnotatable expression)
+			{
+				var methodDef = expression.Annotation<MethodDefinition> ();
+
+				if (methodDef != null)
+				{
+					return methodDef;
+				}
+
+				var methodRef = expression.Annotation<MethodReference> ();
+
+				if (methodRef != null)
+				{
+					return methodRef.Resolve ();
+				}
+
+				return null;
+			}
+		}
+
 		class Renames : DepthFirstAstVisitor, IAstTransform
 		{
 			public void Run (AstNode compilationUnit)
@@ -3539,9 +3623,12 @@ namespace Netjs
 
 						var getter = a.Role == PropertyDeclaration.GetterRole;
 
+						var methodNamePrefix = (getter ? "get " : "set ");
+						if (ES3Compatible) methodNamePrefix = (getter ? ES3GetterPrefix : ES3SetterPrefix);
+
 						var fun = new MethodDeclaration {
 							Body = (BlockStatement)a.Body.Clone(),
-							Name = (getter ? "get " : "set ") + p.Name,
+							Name = methodNamePrefix + p.Name,
 							Modifiers = p.Modifiers,
 						};
 						fun.AddAnnotation (a);
