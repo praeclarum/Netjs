@@ -2502,7 +2502,8 @@ namespace Netjs
 		{
 			public void Run (AstNode compilationUnit)
 			{
-				var c = new Comment ("/<reference path='mscorlib.ts'/>");
+				var filename = ES3Compatible ? "mscorlib.es3.ts" : "mscorlib.ts";
+				var c = new Comment (string.Format("/<reference path='{0}'/>", filename));
 				compilationUnit.InsertChildBefore (compilationUnit.FirstChild, c, Roles.Comment);
 			}
 
