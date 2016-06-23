@@ -71,6 +71,46 @@ This will output a TypeScript file named `Library.ts` containing all the code fr
 
 This compiles the library code along with a small implementation of mscorlib. The files are merged and output as a single JavaScript file `Library.js`.
 
+### ECMAScript 3 Compatibility
+
+In case you need your code to run in es3 environment (like, well, IE8), you have to get rid of accessors as they are not supported.
+Passing `--es3` as an argument would result in creating of getter/setter methods instead of fields with accessors.
+
+    netjs Library.dll --es3
+    
+Library.dll:
+
+    class Person
+    {
+        private string name;
+        public string Name
+        {
+            get { return name; }
+            set { name = value; }
+        }
+    }
+
+Library.ts:
+
+    class Person extends NObject
+    {
+        name: string;
+        SetName(value: string): void
+        {
+            this.name = value;
+        }
+        GetName(): string
+        {
+            return this.name;
+        }
+    }
+
+And then compile TypeScript for ES3. Also use es3 compatible mscorlib.
+
+    tsc -t ES3 mscorlib.es3.ts Library.ts --out Library.js
+
+Since all the references and assignments of all fields with accessors, including native ones, are replaced with methods invocations, you have to provide a corresponding implementation. In `mscorlib.es3.ts` all accessors are replaced with getter/setter methods.
+
 
 ## Philosophy
 
