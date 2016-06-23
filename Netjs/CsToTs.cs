@@ -2254,18 +2254,15 @@ namespace Netjs
 			{
 				base.VisitMemberReferenceExpression (memberReferenceExpression);
 
-				var methodDef = GetMethodDefinition (memberReferenceExpression);
+				var methodDef = GetMethodDef (memberReferenceExpression);
 
-				if (methodDef != null)
+				if (methodDef != null && methodDef.IsGetter)
 				{
-					if (methodDef.IsGetter)
-					{
-						var getterInvocation = new InvocationExpression (
-							new MemberReferenceExpression (
-								memberReferenceExpression.Target.Clone (),
-								ES3GetterPrefix + memberReferenceExpression.MemberName));
-						memberReferenceExpression.ReplaceWith (getterInvocation);
-					}
+					var getterInvocation = new InvocationExpression (
+						new MemberReferenceExpression (
+							memberReferenceExpression.Target.Clone (),
+							ES3GetterPrefix + memberReferenceExpression.MemberName));
+					memberReferenceExpression.ReplaceWith (getterInvocation);
 				}
 			}
 
@@ -2277,40 +2274,18 @@ namespace Netjs
 
 				if (leftExpression != null)
 				{
-					var methodDef = GetMethodDefinition (leftExpression);
+					var methodDef = GetMethodDef (leftExpression);
 
-					if (methodDef != null)
+					if (methodDef != null && methodDef.IsSetter)
 					{
-						if (methodDef.IsSetter)
-						{
-							var setterInvocation = new InvocationExpression (
-								new MemberReferenceExpression (
-									leftExpression.Target.Clone (),
-									ES3SetterPrefix + leftExpression.MemberName),
-								assignmentExpression.Right.Clone ());
-							assignmentExpression.ReplaceWith (setterInvocation);
-						}
+						var setterInvocation = new InvocationExpression (
+							new MemberReferenceExpression (
+								leftExpression.Target.Clone (),
+								ES3SetterPrefix + leftExpression.MemberName),
+							assignmentExpression.Right.Clone ());
+						assignmentExpression.ReplaceWith (setterInvocation);
 					}
 				}
-			}
-
-			MethodDefinition GetMethodDefinition (IAnnotatable expression)
-			{
-				var methodDef = expression.Annotation<MethodDefinition> ();
-
-				if (methodDef != null)
-				{
-					return methodDef;
-				}
-
-				var methodRef = expression.Annotation<MethodReference> ();
-
-				if (methodRef != null)
-				{
-					return methodRef.Resolve ();
-				}
-
-				return null;
 			}
 		}
 
@@ -3643,6 +3618,8 @@ namespace Netjs
 				var fieldName = Char.ToLowerInvariant (p.Name[0]) + p.Name.Substring (1);
 				fieldDeclaration.Variables.Add (new VariableInitializer (fieldName));
 
+				p.Parent.InsertChildBefore (p, fieldDeclaration, Roles.TypeMemberRole);
+
 				foreach (var a in p.Children.OfType<Accessor> ())
 				{
 					MethodDeclaration fun;
@@ -3692,8 +3669,6 @@ namespace Netjs
 
 					p.Parent.InsertChildAfter (p, fun, Roles.TypeMemberRole);
 				}
-
-				p.Parent.InsertChildAfter (p, fieldDeclaration, Roles.TypeMemberRole);
 
 				p.Remove ();
 			}
