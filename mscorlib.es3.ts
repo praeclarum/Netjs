@@ -342,15 +342,7 @@ class NString
 	}
 	static Join(separator: string, parts: string[]): string
 	{
-		var result: string = "";
-		for(var i: number = 0, length: number = parts.length; i < length; i++){
-			if(i == 0){
-				result += parts[i];
-			} else {
-				result += separator + parts[i];
-			}
-		}
-		return result;
+		return parts.join(separator);
 	}
 	static Concat(parts: any[]): string
 	{
