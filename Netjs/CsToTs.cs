@@ -2000,6 +2000,7 @@ namespace Netjs
 			"Equals",
 			"Remove",
 			"Contains",
+			"Split",
 		};
 
 		class SuperPropertiesToThis : DepthFirstAstVisitor, IAstTransform

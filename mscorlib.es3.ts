@@ -342,7 +342,15 @@ class NString
 	}
 	static Join(separator: string, parts: string[]): string
 	{
-		throw new NotImplementedException();
+		var result: string = "";
+		for(var i: number = 0, length: number = parts.length; i < length; i++){
+			if(i == 0){
+				result += parts[i];
+			} else {
+				result += separator + parts[i];
+			}
+		}
+		return result;
 	}
 	static Concat(parts: any[]): string
 	{
@@ -361,6 +369,15 @@ class NString
 			return r;
 		}
 		throw new NotImplementedException ();
+	}
+	static Split(str: string, separator: NChar[]): string[]
+	{
+		var regexp: string = "";
+		separator.forEach((char: number) => {
+			regexp += "\\" + String.fromCharCode(char);
+		});
+		var pattern = new RegExp("["+regexp+"]+");
+		return str.split(pattern);
 	}
 }
 
