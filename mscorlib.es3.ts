@@ -365,10 +365,10 @@ class NString
 		}
 		throw new NotImplementedException ();
 	}
-	static Split(str: string, separator: NChar[]): string[]
+	static Split(str: string, separators: NChar[]): string[]
 	{
 		var regexp: string = '';
-		separator.forEach((char: number) => {
+		separators.forEach((char: number) => {
 			var value = String.fromCharCode(char);
 			if(~NString._EscapedChars.indexOf(value)){
 				regexp += '\\';
