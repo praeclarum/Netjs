@@ -215,6 +215,9 @@ class NChar
 class NString
 {
     static Empty = "";
+	static _EscapedChars: Array<string> = [
+		'\\','^','$','*','+','?','.','(',')',':','=','!','|','{','}',',','[',']'
+	];
 	static IndexOf (str: string, ch: number): number
 	static IndexOf (str: string, ch: number, startIndex: number): number
 	static IndexOf (str: string, sub: string): number
@@ -342,7 +345,7 @@ class NString
 	}
 	static Join(separator: string, parts: string[]): string
 	{
-		throw new NotImplementedException();
+		return parts.join(separator);
 	}
 	static Concat(parts: any[]): string
 	{
@@ -361,6 +364,20 @@ class NString
 			return r;
 		}
 		throw new NotImplementedException ();
+	}
+	static Split(str: string, separators: NChar[]): string[]
+	{
+		var regexp: string = '';
+		separators.forEach((char: number) => {
+			var value = String.fromCharCode(char);
+			if(~NString._EscapedChars.indexOf(value)){
+				regexp += '\\';
+			}
+			regexp += value;
+		});
+
+		var pattern = new RegExp(`[${regexp}]`);
+		return str.split(pattern);
 	}
 }
 
