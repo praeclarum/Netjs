@@ -1110,7 +1110,7 @@ class Regex extends NObject
 	constructor(pattern: string)
 	{
 		super();
-		this.re = new RegExp(pattern, "g");
+		this.re = new RegExp(pattern);
 	}
 
 	Match(input: string): Match
@@ -1306,6 +1306,11 @@ class StringBuilder extends NObject
 			len += this.parts[i].length;
 		}
 		return len;
+	}
+
+	Clear(): StringBuilder {
+		this.parts.length = 0;
+		return this;
 	}
 
 	get_Item(index: number): number
