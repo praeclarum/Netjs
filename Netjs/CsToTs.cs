@@ -2257,6 +2257,17 @@ namespace Netjs
 
 				var methodDef = GetMethodDef (memberReferenceExpression);
 
+				// condition for blocking transformation of `String.length` to `String.Getlength()` in ES3Compatible mode
+				var pd = memberReferenceExpression.Annotation<PropertyDefinition>();
+				if (pd != null)
+				{
+					var tt = pd.DeclaringType;
+					if (tt.FullName == "System.String")
+					{
+						return;
+					}
+				}
+
 				if (methodDef != null && methodDef.IsGetter)
 				{
 					var getterInvocation = new InvocationExpression (
