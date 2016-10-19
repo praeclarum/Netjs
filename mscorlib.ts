@@ -211,6 +211,9 @@ class NChar
 class NString
 {
     static Empty = "";
+    static _EscapedChars: Array<string> = [
+		'\\','^','$','*','+','?','.','(',')',':','=','!','|','{','}',',','[',']'
+	];
 	static IndexOf (str: string, ch: number): number
 	static IndexOf (str: string, ch: number, startIndex: number): number
 	static IndexOf (str: string, sub: string): number
@@ -265,14 +268,14 @@ class NString
 	/*static Remove(str: string, startIndex: number): string*/
 	static Remove(str: string, startIndex: number, length: number): string
     {
-        if (typeof length === undefined)
-        {
-            return str.substring(0, startIndex);
-        }
-        else
-        {
-            return str.substring(0, startIndex) + str.substring(startIndex + length);
-        }
+		if (typeof length === undefined)
+		{
+		    return str.substring(0, startIndex);
+		}
+		else
+		{
+		    return str.substring(0, startIndex) + str.substring(startIndex + length);
+		}
     }
 	/*static Remove(str: string, startIndex: number, length?: number): string
 	{
@@ -338,7 +341,7 @@ class NString
 	}
 	static Join(separator: string, parts: string[]): string
 	{
-		throw new NotImplementedException();
+		return parts.join(separator);
 	}
 	static Concat(parts: any[]): string
 	{
@@ -357,6 +360,20 @@ class NString
 			return r;
 		}
 		throw new NotImplementedException ();
+	}
+	static Split(str: string, separator: NChar[]): string[]
+	{
+		var regexp: string = '';
+		separator.forEach((char: number) => {
+			var value = String.fromCharCode(char);
+			if(~NString._EscapedChars.indexOf(value)){
+				regexp += '\\';
+			}
+			regexp += value;
+		});
+
+		var pattern = new RegExp(`[${regexp}]`);
+		return str.split(pattern);
 	}
 }
 
@@ -1076,7 +1093,7 @@ class Regex extends NObject
 	constructor(pattern: string)
 	{
 		super();
-		this.re = new RegExp(pattern, "g");
+		this.re = new RegExp(pattern);
 	}
 
 	Match(input: string): Match
@@ -1241,6 +1258,11 @@ class StringBuilder extends NObject
 			len += this.parts[i].length;
 		}
 		return len;
+	}
+
+	Clear(): StringBuilder {
+		this.parts.length = 0;
+		return this;
 	}
 
 	get_Item(index: number): number
