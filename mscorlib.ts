@@ -211,9 +211,13 @@ class NChar
 class NString
 {
     static Empty = "";
-    static _EscapedChars: Array<string> = [
-		'\\','^','$','*','+','?','.','(',')',':','=','!','|','{','}',',','[',']'
-	];
+	private static escapeRegExp(str: string){
+		var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
+			reHasRegExpChar = RegExp(reRegExpChar.source);
+		return str && reHasRegExpChar.test(str)
+			? str.replace(reHasRegExpChar, '\\$&')
+			: str;
+	}
 	static IndexOf (str: string, ch: number): number
 	static IndexOf (str: string, ch: number, startIndex: number): number
 	static IndexOf (str: string, sub: string): number
@@ -281,17 +285,22 @@ class NString
 	{
 		throw new NotImplementedException(); // do we care that ts->js compiler will get rid of this syntactic sugar?
 	}*/
-	static Trim(str: string): string
+	static Trim(str: string,  trimChars: number[] = null): string
 	{
-		return str.trim();
+		if(trimChars == null){
+			return str.trim();
+		}
+		return NString.TrimEnd(NString.TrimStart(str, trimChars), trimChars);
 	}
-	static TrimStart(str: string, trimChars: number[]): string
+	static TrimStart(str: string, trimChars: number[] = [' '.charCodeAt(0) /* */]): string
 	{
-		throw new NotImplementedException();
+		var pattern = NString.escapeRegExp(String.fromCharCode(...trimChars));
+		return str.replace(new RegExp(`^[${pattern}]+`), '');
 	}
-	static TrimEnd(str: string, trimChars: number[]): string
+	static TrimEnd(str: string, trimChars: number[] = [' '.charCodeAt(0) /* */]): string
 	{
-		throw new NotImplementedException();
+		var pattern = NString.escapeRegExp(String.fromCharCode(...trimChars));
+		return str.replace(new RegExp(`[${pattern}]+$`), '');
 	}
 	static ToUpperInvariant(str: string): string
 	{
@@ -361,18 +370,9 @@ class NString
 		}
 		throw new NotImplementedException ();
 	}
-	static Split(str: string, separator: NChar[]): string[]
+	static Split(str: string, separators: number[]): string[]
 	{
-		var regexp: string = '';
-		separator.forEach((char: number) => {
-			var value = String.fromCharCode(char);
-			if(~NString._EscapedChars.indexOf(value)){
-				regexp += '\\';
-			}
-			regexp += value;
-		});
-
-		var pattern = new RegExp(`[${regexp}]`);
+		var pattern = new RegExp(`[${NString.escapeRegExp(String.fromCharCode(...separators))}]`);
 		return str.split(pattern);
 	}
 }
