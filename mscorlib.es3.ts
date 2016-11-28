@@ -296,12 +296,12 @@ class NString
 		}
 		return NString.TrimEnd(NString.TrimStart(str, trimChars), trimChars);
 	}
-	static TrimStart(str: string, trimChars: number[] = [' '.charCodeAt(0) /* */]): string
+	static TrimStart(str: string, trimChars: number[] = [32/*space*/]): string
 	{
 		var pattern = NString.escapeRegExp(String.fromCharCode(...trimChars));
 		return str.replace(new RegExp(`^[${pattern}]+`), '');
 	}
-	static TrimEnd(str: string, trimChars: number[] = [' '.charCodeAt(0) /* */]): string
+	static TrimEnd(str: string, trimChars: number[] = [32/*space*/]): string
 	{
 		var pattern = NString.escapeRegExp(String.fromCharCode(...trimChars));
 		return str.replace(new RegExp(`[${pattern}]+$`), '');
