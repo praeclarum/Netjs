@@ -64,16 +64,16 @@ namespace Netjs
 
 		void Run (Config config)
 		{
+			if (string.IsNullOrEmpty (config.MainAssembly)) {
+				config.ShowHelp = true;
+			}
+
 			if (config.ShowHelp) {
 				Console.WriteLine ("Netjs compiler, Copyright 2014-2016 Frank A. Krueger");
 				Console.WriteLine ("netjs [options] assembly-file");
 				Console.WriteLine ("   --help, -h           Show usage information");
 				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
 				return;
-			}
-
-			if (string.IsNullOrEmpty (config.MainAssembly)) {
-				throw new Exception ("No assembly specified.");
 			}
 
 			var asmPath = Path.GetFullPath (config.MainAssembly);
