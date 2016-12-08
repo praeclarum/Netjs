@@ -29,22 +29,28 @@ namespace Netjs
 		{
 			public string MainAssembly = "";
 			public bool ShowHelp = false;
+			public bool IncludeRefs = false;
 		}
 
 		public static int Main (string[] args)
 		{
 			var config = new Config ();
 			for (int i = 0; i < args.Length; i++) {
-				var a = args [i];
+				var a = args[i];
 				switch (a) {
-				case "--help":
-				case "-help":
-				case "-?":
-					config.ShowHelp = true;
-					break;
-				default:
-					config.MainAssembly = a;
-					break;
+					case "--includerefs":
+					case "-r":
+						config.IncludeRefs = true;
+						break;
+					case "--help":
+					case "-h":
+					case "-?":
+					case "/?":
+						config.ShowHelp = true;
+						break;
+					default:
+						config.MainAssembly = a;
+						break;
 				}
 			}
 			try {
@@ -61,7 +67,8 @@ namespace Netjs
 			if (config.ShowHelp) {
 				Console.WriteLine ("Netjs compiler, Copyright 2014-2016 Frank A. Krueger");
 				Console.WriteLine ("netjs [options] assembly-file");
-				Console.WriteLine ("   -help                Lists all compiler options (short: -?)");
+				Console.WriteLine ("   --help, -h           Show usage information");
+				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
 				return;
 			}
 
@@ -70,7 +77,7 @@ namespace Netjs
 			}
 
 			var asmPath = Path.GetFullPath (config.MainAssembly);
-			asmSearchPaths.Add (Tuple.Create (Path.GetDirectoryName (asmPath), true));
+			asmSearchPaths.Add (Tuple.Create (Path.GetDirectoryName (asmPath), config.IncludeRefs));
 
 			var outPath = Path.ChangeExtension (asmPath, ".ts");
 
