@@ -70,7 +70,7 @@ namespace Netjs
 			}
 
 			var asmPath = Path.GetFullPath (config.MainAssembly);
-			asmSearchPaths.Add (Path.GetDirectoryName (asmPath));
+			asmSearchPaths.Add (Tuple.Create (Path.GetDirectoryName (asmPath), true));
 
 			var outPath = Path.ChangeExtension (asmPath, ".ts");
 
@@ -79,9 +79,11 @@ namespace Netjs
 			globalReaderParameters.ReadingMode = ReadingMode.Immediate;
 
 			var libDir = Path.GetDirectoryName (typeof (String).Assembly.Location);
-			asmSearchPaths.Add (libDir);
-			asmSearchPaths.Add (Path.Combine (libDir, "Facades"));
+			asmSearchPaths.Add (Tuple.Create(libDir, false));
+			asmSearchPaths.Add (Tuple.Create(Path.Combine (libDir, "Facades"), false));
 			var asm = AssemblyDefinition.ReadAssembly (asmPath, globalReaderParameters);
+			referencedAssemblies[asm.Name.Name] = asm;
+			decompileAssemblies.Add (asm);
 
 			Step ("Decompiling IL to C#");
 			var context = new DecompilerContext (asm.MainModule);
@@ -97,14 +99,13 @@ namespace Netjs
 			context.Settings.FullyQualifyAmbiguousTypeNames = true;
 			context.Settings.YieldReturn = false;
 			var builder = new AstBuilder (context);
-			var added = new HashSet<string> ();
-			builder.AddAssembly (asm);
-			added.Add (asm.FullName);
+			var decompiled = new HashSet<string> ();
 			for (;;) {
-				var a = referencedAssemblies.Values.FirstOrDefault (x => !added.Contains (x.FullName));
+				var a = decompileAssemblies.FirstOrDefault (x => !decompiled.Contains (x.FullName));
 				if (a != null) {
+					Info ("  Decompiling {0}", a.FullName);
 					builder.AddAssembly (a);
-					added.Add (a.FullName);
+					decompiled.Add (a.FullName);
 				}
 				else {
 					break;
@@ -162,8 +163,9 @@ namespace Netjs
 		#region IAssemblyResolver implementation
 
 		readonly ReaderParameters globalReaderParameters = new ReaderParameters ();
-		readonly List<string> asmSearchPaths = new List<string> ();
+		readonly List<Tuple<string, bool>> asmSearchPaths = new List<Tuple<string, bool>> ();
 		readonly Dictionary<string, AssemblyDefinition> referencedAssemblies = new Dictionary<string, AssemblyDefinition> ();
+		readonly List<AssemblyDefinition> decompileAssemblies = new List<AssemblyDefinition> ();
 
 		public AssemblyDefinition Resolve (AssemblyNameReference name)
 		{
@@ -176,17 +178,21 @@ namespace Netjs
 			var n = name.Name;
 			AssemblyDefinition asm;
 			if (!referencedAssemblies.TryGetValue (n, out asm)) {
-				foreach (var asmDir in asmSearchPaths) {
+				foreach (var x in asmSearchPaths) {
+					var asmDir = x.Item1;
 					var fn = Path.Combine (asmDir, name.Name + ".dll");
 					if (File.Exists (fn)) {
 						asm = AssemblyDefinition.ReadAssembly (fn, parameters);
 						referencedAssemblies[n] = asm;
-						Info ("  Loaded {0}", fn);
+						if (x.Item2) {
+							decompileAssemblies.Add (asm);
+						}
+						Info ("    Loaded {0} (decompile={1})", fn, x.Item2);
 						break;
 					}
 				}
 				if (asm == null) {
-					Error ("  Could not find assembly {0}", name);
+					Error ("    Could not find assembly {0}", name);
 				}
 			}
 			return asm;
