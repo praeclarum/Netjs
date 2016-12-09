@@ -27,7 +27,7 @@ namespace Netjs
 	{
 		class Config
 		{
-			public string MainAssembly = "";
+			public List<string> AssembliesToDecompile = new List<string> ();
 			public bool ShowHelp = false;
 			public bool IncludeRefs = false;
 		}
@@ -49,7 +49,9 @@ namespace Netjs
 						config.ShowHelp = true;
 						break;
 					default:
-						config.MainAssembly = a;
+						if (!a.StartsWith ("-")) {
+							config.AssembliesToDecompile.Add (a);
+						}
 						break;
 				}
 			}
@@ -64,22 +66,34 @@ namespace Netjs
 
 		void Run (Config config)
 		{
-			if (string.IsNullOrEmpty (config.MainAssembly)) {
+			if (config.AssembliesToDecompile.Count == 0) {
 				config.ShowHelp = true;
 			}
 
 			if (config.ShowHelp) {
 				Console.WriteLine ("Netjs compiler, Copyright 2014-2016 Frank A. Krueger");
-				Console.WriteLine ("netjs [options] assembly-file");
+				Console.WriteLine ("netjs [options] assembly-files");
 				Console.WriteLine ("   --help, -h           Show usage information");
 				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
 				return;
 			}
 
-			var asmPath = Path.GetFullPath (config.MainAssembly);
-			asmSearchPaths.Add (Tuple.Create (Path.GetDirectoryName (asmPath), config.IncludeRefs));
+			string outPath = "";
+			var asmPaths = new List<string> ();
 
-			var outPath = Path.ChangeExtension (asmPath, ".ts");
+			foreach (var asmRelPath in config.AssembliesToDecompile) {
+				var asmPath = Path.GetFullPath (asmRelPath);
+				asmPaths.Add (asmPath);
+
+				if (string.IsNullOrEmpty (outPath)) {
+					outPath = Path.ChangeExtension (asmPath, ".ts");
+				}
+
+				var asmDir = Path.GetDirectoryName (asmPath);
+				if (!asmSearchPaths.Exists (x => x.Item1 == asmDir)) {
+					asmSearchPaths.Add (Tuple.Create (asmDir, config.IncludeRefs));
+				}
+			}
 
 			Step ("Reading IL");
 			globalReaderParameters.AssemblyResolver = this;
@@ -88,12 +102,18 @@ namespace Netjs
 			var libDir = Path.GetDirectoryName (typeof (String).Assembly.Location);
 			asmSearchPaths.Add (Tuple.Create(libDir, false));
 			asmSearchPaths.Add (Tuple.Create(Path.Combine (libDir, "Facades"), false));
-			var asm = AssemblyDefinition.ReadAssembly (asmPath, globalReaderParameters);
-			referencedAssemblies[asm.Name.Name] = asm;
-			decompileAssemblies.Add (asm);
+
+			AssemblyDefinition firstAsm = null;
+			foreach (var asmPath in asmPaths) {
+				var asm = AssemblyDefinition.ReadAssembly (asmPath, globalReaderParameters);
+				if (firstAsm == null)
+					firstAsm = asm;
+				referencedAssemblies[asm.Name.Name] = asm;
+				decompileAssemblies.Add (asm);
+			}
 
 			Step ("Decompiling IL to C#");
-			var context = new DecompilerContext (asm.MainModule);
+			var context = new DecompilerContext (firstAsm.MainModule);
 			context.Settings.ForEachStatement = false;
 			context.Settings.ObjectOrCollectionInitializers = false;
 			context.Settings.UsingStatement = false;
