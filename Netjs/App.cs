@@ -1,4 +1,4 @@
-﻿// Copyright 2014 Frank A. Krueger
+﻿// Copyright 2014-2016 Frank A. Krueger
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,33 +25,39 @@ namespace Netjs
 {
 	public class App : IAssemblyResolver
 	{
-		string asmDir = "";
-
 		class Config
 		{
-			public string MainAssembly = "";
+			public List<string> AssembliesToDecompile = new List<string> ();
 			public bool ShowHelp = false;
 			public bool ES3Compatible = false;
+			public bool IncludeRefs = false;
 		}
 
 		public static int Main (string[] args)
 		{
 			var config = new Config ();
 			for (int i = 0; i < args.Length; i++) {
-				var a = args [i];
+				var a = args[i];
 				switch (a) {
-				case "--help":
-				case "-help":
-				case "-?":
-					config.ShowHelp = true;
-					break;
+					case "--includerefs":
+					case "-r":
+						config.IncludeRefs = true;
+						break;
+					case "--help":
+					case "-h":
+					case "-?":
+					case "/?":
+						config.ShowHelp = true;
+						break;
 				case "--es3":
 				case "-es3":
 					config.ES3Compatible = true;
 					break;
-				default:
-					config.MainAssembly = a;
-					break;
+					default:
+						if (!a.StartsWith ("-")) {
+							config.AssembliesToDecompile.Add (a);
+						}
+						break;
 				}
 			}
 			try {
@@ -65,33 +71,54 @@ namespace Netjs
 
 		void Run (Config config)
 		{
+			if (config.AssembliesToDecompile.Count == 0) {
+				config.ShowHelp = true;
+			}
+
 			if (config.ShowHelp) {
-				Console.WriteLine ("Netjs compiler, Copyright 2014 Frank A. Krueger");
-				Console.WriteLine ("netjs [options] assembly-file");
-				Console.WriteLine ("   -help                Lists all compiler options (short: -?)");
+				Console.WriteLine ("Netjs compiler, Copyright 2014-2016 Frank A. Krueger");
+				Console.WriteLine ("netjs [options] assembly-files");
+				Console.WriteLine ("   --help, -h           Show usage information");
+				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
 				return;
 			}
 
-			if (string.IsNullOrEmpty (config.MainAssembly)) {
-				throw new Exception ("No assembly specified.");
+			string outPath = "";
+			var asmPaths = new List<string> ();
+
+			foreach (var asmRelPath in config.AssembliesToDecompile) {
+				var asmPath = Path.GetFullPath (asmRelPath);
+				asmPaths.Add (asmPath);
+
+				if (string.IsNullOrEmpty (outPath)) {
+					outPath = Path.ChangeExtension (asmPath, ".ts");
+				}
+
+				var asmDir = Path.GetDirectoryName (asmPath);
+				if (!asmSearchPaths.Exists (x => x.Item1 == asmDir)) {
+					asmSearchPaths.Add (Tuple.Create (asmDir, config.IncludeRefs));
+				}
 			}
 
-			var asmPath = Path.GetFullPath (config.MainAssembly);
-			asmDir = Path.GetDirectoryName (asmPath);
-			var outPath = Path.ChangeExtension (asmPath, ".ts");
-
 			Step ("Reading IL");
-			var parameters = new ReaderParameters {
-				AssemblyResolver = this,
-			};
-			var asm = AssemblyDefinition.ReadAssembly (asmPath, parameters);
-			mscorlib = AssemblyDefinition.ReadAssembly (typeof(String).Assembly.Location, parameters);
-			system = AssemblyDefinition.ReadAssembly (typeof(INotifyPropertyChanged).Assembly.Location, parameters);
-			systemCore = AssemblyDefinition.ReadAssembly (typeof(Enumerable).Assembly.Location, parameters);
-			systemDrawing = AssemblyDefinition.ReadAssembly (typeof(System.Drawing.Bitmap).Assembly.Location, parameters);
+			globalReaderParameters.AssemblyResolver = this;
+			globalReaderParameters.ReadingMode = ReadingMode.Immediate;
+
+			var libDir = Path.GetDirectoryName (typeof (String).Assembly.Location);
+			asmSearchPaths.Add (Tuple.Create(libDir, false));
+			asmSearchPaths.Add (Tuple.Create(Path.Combine (libDir, "Facades"), false));
+
+			AssemblyDefinition firstAsm = null;
+			foreach (var asmPath in asmPaths) {
+				var asm = AssemblyDefinition.ReadAssembly (asmPath, globalReaderParameters);
+				if (firstAsm == null)
+					firstAsm = asm;
+				referencedAssemblies[asm.Name.Name] = asm;
+				decompileAssemblies.Add (asm);
+			}
 
 			Step ("Decompiling IL to C#");
-			var context = new DecompilerContext (asm.MainModule);
+			var context = new DecompilerContext (firstAsm.MainModule);
 			context.Settings.ForEachStatement = false;
 			context.Settings.ObjectOrCollectionInitializers = false;
 			context.Settings.UsingStatement = false;
@@ -104,10 +131,17 @@ namespace Netjs
 			context.Settings.FullyQualifyAmbiguousTypeNames = true;
 			context.Settings.YieldReturn = false;
 			var builder = new AstBuilder (context);
-			builder.AddAssembly (asm);
-			foreach (var a in referencedAssemblies.Values) {
-				if (a != null)
+			var decompiled = new HashSet<string> ();
+			for (;;) {
+				var a = decompileAssemblies.FirstOrDefault (x => !decompiled.Contains (x.FullName));
+				if (a != null) {
+					Info ("  Decompiling {0}", a.FullName);
 					builder.AddAssembly (a);
+					decompiled.Add (a.FullName);
+				}
+				else {
+					break;
+				}
 			}
 			builder.RunTransformations ();
 
@@ -122,6 +156,8 @@ namespace Netjs
 
 			Step ("Done");
 		}
+
+		#region Logging
 
 		public static void Step (string message)
 		{
@@ -153,60 +189,57 @@ namespace Netjs
 		{
 			Console.WriteLine (format, args);
 		}
-			
+
+		#endregion
+
 		#region IAssemblyResolver implementation
 
-		AssemblyDefinition mscorlib;
-		AssemblyDefinition system;
-		AssemblyDefinition systemCore;
-		AssemblyDefinition systemDrawing;
-
+		readonly ReaderParameters globalReaderParameters = new ReaderParameters ();
+		readonly List<Tuple<string, bool>> asmSearchPaths = new List<Tuple<string, bool>> ();
 		readonly Dictionary<string, AssemblyDefinition> referencedAssemblies = new Dictionary<string, AssemblyDefinition> ();
+		readonly List<AssemblyDefinition> decompileAssemblies = new List<AssemblyDefinition> ();
 
 		public AssemblyDefinition Resolve (AssemblyNameReference name)
 		{
-			return Resolve (name, null);
+			//Info ("R1: {0}", name);
+			return Resolve (name, globalReaderParameters);
 		}
 		public AssemblyDefinition Resolve (AssemblyNameReference name, ReaderParameters parameters)
 		{
-			switch (name.Name) {
-			case "mscorlib":
-				return mscorlib;
-			case "System":
-				return system;
-			case "System.Core":
-				return systemCore;
-			case "System.Drawing":
-				return systemDrawing;
-			default:
-				var n = name.Name;
-				AssemblyDefinition asm;
-				if (!referencedAssemblies.TryGetValue (n, out asm)) {
+			//Info ("R2: {0}", name);
+			var n = name.Name;
+			AssemblyDefinition asm;
+			if (!referencedAssemblies.TryGetValue (n, out asm)) {
+				foreach (var x in asmSearchPaths) {
+					var asmDir = x.Item1;
 					var fn = Path.Combine (asmDir, name.Name + ".dll");
 					if (File.Exists (fn)) {
-
-						asm = parameters != null ? 
-							AssemblyDefinition.ReadAssembly (fn, parameters) : 
-							AssemblyDefinition.ReadAssembly (fn);
-						Info ("  Loaded {0}", fn);
+						asm = AssemblyDefinition.ReadAssembly (fn, parameters);
+						referencedAssemblies[n] = asm;
+						if (x.Item2) {
+							decompileAssemblies.Add (asm);
+						}
+						Info ("    Loaded {0} (decompile={1})", fn, x.Item2);
+						break;
 					}
-					else {
-						asm = null;
-						Error ("  Could not find assembly {0}", name);
-					}
-					referencedAssemblies [n] = asm;
 				}
-				return asm;
+				if (asm == null) {
+					Error ("    Could not find assembly {0}", name);
+				}
 			}
+			return asm;
 		}
 		public AssemblyDefinition Resolve (string fullName)
 		{
+			//Info ("R3: {0}", fullName);
 			return null;
 		}
 		public AssemblyDefinition Resolve (string fullName, ReaderParameters parameters)
 		{
+			//Info ("R4: {0}", fullName);
 			return null;
 		}
+
 		#endregion
 	}
 }
