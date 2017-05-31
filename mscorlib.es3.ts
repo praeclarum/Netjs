@@ -1146,13 +1146,10 @@ class Regex extends NObject
 
 class Match extends NObject
 {
-	private _groupcoll: List<Group>;
+	private _groupcoll: List<Group> = new List<Group> ();
 	private _success: boolean = false;
 	GetGroups(): List<Group>
 	{
-		if (this._groupcoll == null) {
-			this._groupcoll = new List<Group> ();
-		}
 		return this._groupcoll;
 	}
 	_AddGroup(group: Group) {
