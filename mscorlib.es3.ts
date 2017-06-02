@@ -367,7 +367,7 @@ class NString
 	{
 		if (chOrChars.constructor === Number) {
 			var r = String.fromCharCode (chOrChars);
-			for (var i = 2; i < count; i++) {
+			for (var i = 1; i < count; i++) {
 				r += String.fromCharCode (chOrChars);
 			}
 			return r;
