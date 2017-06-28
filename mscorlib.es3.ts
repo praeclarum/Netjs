@@ -24,7 +24,7 @@ class NObject
 	}
 	ToString(): string
 	{
-		return this.GetType ().Name;
+		return this.GetType ().GetName();
 	}
 	toString(): string
 	{
@@ -430,9 +430,15 @@ class NMath extends NObject
 
 class Type extends NObject
 {
-	constructor(public Name: string)
+	private Name: string;
+	GetName(): string
+	{
+		return this.Name;
+	}
+	constructor(name: string)
 	{
 		super();
+		this.Name = name;
 	}
 	Equals(obj: any): boolean
 	{
@@ -680,7 +686,7 @@ class CultureInfo extends NObject implements IFormatProvider
 
 	GetFormat(type: Type): any
 	{
-		if (type.Name === "NumberFormatInfo") {
+		if (type.GetName() === "NumberFormatInfo") {
 			return this.nfi;
 		}
 		return null;
