@@ -1339,7 +1339,7 @@ class Enumerable extends NObject
 		const result = [];
 		const enumerator = e.GetEnumerator ();
 		while (enumerator.MoveNext ()) {
-            result.push(enumerator.GetCurrent());
+			result.push(enumerator.GetCurrent());
 		}
 		return result;
 	}
@@ -1600,14 +1600,14 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();
 	}
 
-	static ToDictionary<T,K,V>(e: IEnumerable<T>, k: (T)=>K, v: (T)=>V): Dictionary<K,V>
+	static ToDictionary<T,K,V>(e: IEnumerable<T>, keySelector: (T)=>K, elementSelector: (T)=>V): Dictionary<K,V>
 	{
 		var result = new Dictionary<K,V>();
 		var enumerator = e.GetEnumerator();
 		while (enumerator.MoveNext()) {
 			var current = enumerator.GetCurrent();
-			var key = k(current);
-			var value = v(current);
+			var key = keySelector(current);
+			var value = elementSelector(current);
 			result.Add(key, value);
 		}
 		return result;
