@@ -1387,7 +1387,12 @@ class Enumerable extends NObject
 {
 	static ToArray<T>(e: IEnumerable<T>): T[]
 	{
-		throw new NotImplementedException ();
+		const result = [];
+		const enumerator = e.GetEnumerator ();
+		while (enumerator.MoveNext ()) {
+			result.push(enumerator.GetCurrent());
+		}
+		return result;
 	}
 
 	static ToList<T>(e: IEnumerable<T>): List<T>
@@ -1619,7 +1624,12 @@ class Enumerable extends NObject
 
 	static Count<T>(e: IEnumerable<T>): number
 	{
-		throw new NotImplementedException ();
+		var result = 0;
+		var enumerator = e.GetEnumerator();
+		while (enumerator.MoveNext()) {
+			result++;
+		}
+		return result;
 	}
 
 	static Sum<T>(e: IEnumerable<T>, s: (a: T)=>number): number
@@ -1641,9 +1651,17 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();
 	}
 
-	static ToDictionary<T,K,V>(e: IEnumerable<T>, k: (T)=>K, v: (T)=>V): Dictionary<K,V>
+	static ToDictionary<T,K,V>(e: IEnumerable<T>, keySelector: (T)=>K, elementSelector: (T)=>V): Dictionary<K,V>
 	{
-		throw new NotImplementedException ();
+		var result = new Dictionary<K,V>();
+		var enumerator = e.GetEnumerator();
+		while (enumerator.MoveNext()) {
+			var current = enumerator.GetCurrent();
+			var key = keySelector(current);
+			var value = elementSelector(current);
+			result.Add(key, value);
+		}
+		return result;
 	}
 }
 
