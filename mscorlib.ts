@@ -1334,15 +1334,15 @@ class StringWriter extends TextWriter
 
 class Enumerable extends NObject
 {
-    static ToArray<T>(e: IEnumerable<T>): T[]
-    {
-        const r = [];
-        const ee = e.GetEnumerator ();
-        while (ee.MoveNext ()) {
-            r.push(ee.GetCurrent());
-        }
-        return r;
-    }
+	static ToArray<T>(e: IEnumerable<T>): T[]
+	{
+		const result = [];
+		const enumerator = e.GetEnumerator ();
+		while (enumerator.MoveNext ()) {
+            result.push(enumerator.GetCurrent());
+		}
+		return result;
+	}
 
 	static ToList<T>(e: IEnumerable<T>): List<T>
 	{
@@ -1571,15 +1571,15 @@ class Enumerable extends NObject
 		return true;
 	}
 
-    static Count<T>(e: IEnumerable<T>): number
-    {
-        var r = 0;
-        var i = e.GetEnumerator();
-        while (i.MoveNext()) {
-            r++;
-        }
-        return r;
-    }
+	static Count<T>(e: IEnumerable<T>): number
+	{
+		var result = 0;
+		var enumerator = e.GetEnumerator();
+		while (enumerator.MoveNext()) {
+			result++;
+		}
+		return result;
+	}
 
 	static Sum<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	{
@@ -1600,18 +1600,18 @@ class Enumerable extends NObject
 		throw new NotImplementedException ();
 	}
 
-    static ToDictionary<T,K,V>(e: IEnumerable<T>, k: (T)=>K, v: (T)=>V): Dictionary<K,V>
-    {
-        var r = new Dictionary<K,V>();
-        var i = e.GetEnumerator();
-        while (i.MoveNext()) {
-            var c = i.GetCurrent();
-            var key = k(c);
-            var value = v(c);
-            r.Add(key, value);
-        }
-        return r;
-    }
+	static ToDictionary<T,K,V>(e: IEnumerable<T>, k: (T)=>K, v: (T)=>V): Dictionary<K,V>
+	{
+		var result = new Dictionary<K,V>();
+		var enumerator = e.GetEnumerator();
+		while (enumerator.MoveNext()) {
+			var current = enumerator.GetCurrent();
+			var key = k(current);
+			var value = v(current);
+			result.Add(key, value);
+		}
+		return result;
+	}
 }
 
 
