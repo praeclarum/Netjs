@@ -24,7 +24,7 @@ class NObject
 	}
 	ToString(): string
 	{
-		return this.GetType ().Name;
+		return this.GetType ().GetName();
 	}
 	toString(): string
 	{
@@ -57,15 +57,19 @@ class NObject
 
 class Exception extends NObject
 {
-	Message: string;
+	private _message: string;
+	GetMessage(): string
+	{
+		return this._message;
+	}
 	constructor(message: string = "")
 	{
 		super();
-		this.Message = message;
+		this._message = message;
 	}
 	ToString(): string
 	{
-		return "Exception: " + this.Message;
+		return "Exception: " + this._message;
 	}
 }
 
@@ -274,11 +278,11 @@ class NString
     {
 		if (typeof length === undefined)
 		{
-		    return str.substring(0, startIndex);
+			return str.substring(0, startIndex);
 		}
 		else
 		{
-		    return str.substring(0, startIndex) + str.substring(startIndex + length);
+			return str.substring(0, startIndex) + str.substring(startIndex + length);
 		}
     }
 	/*static Remove(str: string, startIndex: number, length?: number): string
@@ -426,9 +430,15 @@ class NMath extends NObject
 
 class Type extends NObject
 {
-	constructor(public Name: string)
+	private Name: string;
+	GetName(): string
+	{
+		return this.Name;
+	}
+	constructor(name: string)
 	{
 		super();
+		this.Name = name;
 	}
 	Equals(obj: any): boolean
 	{
@@ -438,12 +448,16 @@ class Type extends NObject
 
 class Nullable<T> extends NObject
 {
-	Value: T;
-	get HasValue(): boolean { return this.Value != null; }
+	private _value: T;
+	GetValue(): T
+	{
+		return this._value;
+	};
+	GetHasValue(): boolean { return this._value != null; }
 	constructor(value: T = null)
 	{
 		super();
-		this.Value = value;
+		this._value = value;
 	}
 }
 
@@ -468,11 +482,11 @@ class DateTime extends NObject
 {
 	private dt: Date;
 	private kind: DateTimeKind;
-	get Kind(): DateTimeKind { return this.kind; }	
-	get Year(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCFullYear() : this.dt.getFullYear(); }
-	get Month(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCMonth()+1 : this.dt.getMonth()+1; }
-	get Day(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCDate() : this.dt.getDate(); }
-	get DayOfWeek(): DayOfWeek { return this.dt.getDay(); }
+	GetKind(): DateTimeKind { return this.kind; }
+	GetYear(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCFullYear() : this.dt.getFullYear(); }
+	GetMonth(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCMonth()+1 : this.dt.getMonth()+1; }
+	GetDay(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCDate() : this.dt.getDate(); }
+	GetDayOfWeek(): DayOfWeek { return this.dt.getDay(); }
 	constructor()
 	constructor(year: number, month: number, day: number)
 	constructor(year: number = 1, month: number = 1, day: number = 1)
@@ -485,14 +499,14 @@ class DateTime extends NObject
 	{
 		return this.kind === DateTimeKind.Utc ? this.dt.toUTCString() : this.dt.toString();
 	}
-	static get UtcNow(): DateTime
+	static GetUtcNow(): DateTime
 	{
 		var d = new DateTime();
 		d.dt = new Date();
 		d.kind = DateTimeKind.Utc;
 		return d;
 	}
-	static get Now(): DateTime
+	static GetNow(): DateTime
 	{
 		var d = new DateTime();
 		d.dt = new Date();
@@ -517,23 +531,23 @@ class TimeSpan extends NObject
 		super();
 		this.ticks = ticks;
 	}
-	get TotalDays(): number
+	GetTotalDays(): number
 	{
 		throw new NotImplementedException ();
 	}
-	get Days(): number
+	GetDays(): number
 	{
 		throw new NotImplementedException ();
 	}
-	get Hours(): number
+	GetHours(): number
 	{
 		throw new NotImplementedException ();
 	}
-	get Minutes(): number
+	GetMinutes(): number
 	{
 		throw new NotImplementedException ();
 	}
-	get Seconds(): number
+	GetSeconds(): number
 	{
 		throw new NotImplementedException ();	
 	}
@@ -672,7 +686,7 @@ class CultureInfo extends NObject implements IFormatProvider
 
 	GetFormat(type: Type): any
 	{
-		if (type.Name === "NumberFormatInfo") {
+		if (type.GetName() === "NumberFormatInfo") {
 			return this.nfi;
 		}
 		return null;
@@ -721,7 +735,7 @@ interface IEnumerable<T>
 interface IEnumerator<T> extends IDisposable
 {
 	MoveNext(): boolean;
-	Current: T;
+	GetCurrent(): T;
 }
 
 interface IDisposable
@@ -731,7 +745,7 @@ interface IDisposable
 
 interface IList<T>
 {
-	Count: number;
+	GetCount(): number;
 	get_Item(index: number): T;
 	set_Item(index: number, value: T): void;
 }
@@ -760,11 +774,11 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	{
 		var e = items.GetEnumerator ();
 		while (e.MoveNext ()) {
-			this.Add (e.Current);
+			this.Add (e.GetCurrent());
 		}
 	}
 
-	get Count(): number
+	GetCount(): number
 	{
 		return this.array.length;
 	}
@@ -846,7 +860,7 @@ class Array_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposable
 		this.index++;
 		return this.index < this.array.length;
 	}
-	get Current(): T
+	GetCurrent(): T
 	{
 		return this.array[this.index];
 	}
@@ -908,7 +922,7 @@ class HashSet<T> extends NObject implements IEnumerable<T>
 		throw new NotImplementedException ();
 	}
 
-	get Count(): number
+	GetCount(): number
 	{
 		throw new NotImplementedException ();
 	}
@@ -920,7 +934,7 @@ class HashSet_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposab
 	{
 		throw new NotImplementedException ();
 	}
-	get Current(): T
+	GetCurrent(): T
 	{
 		throw new NotImplementedException ();	
 	}
@@ -931,14 +945,23 @@ class HashSet_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposab
 
 class KeyValuePair<K, V> extends NObject
 {
-	Key: K;
-	Value: V;
+	private key: K;
+	private value: V;
+
+	GetKey(): K
+	{
+		return this.key;
+	}
+	GetValue(): V
+	{
+		return this.value;
+	}
 
 	constructor(key: K, value: V)
 	{
 		super();
-		this.Key = key;
-		this.Value = value;
+		this.key = key;
+		this.value = value;
 	}
 }
 
@@ -1025,7 +1048,7 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		this.keys = {};
 	}
 
-	get Count(): number
+	GetCount(): number
 	{
 		return Object.keys(this.values).length;
 	}
@@ -1037,7 +1060,7 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		}
 		return new Dictionary_Enumerator<K,V> (kvs);
 	}
-	get Keys(): Dictionary_KeyCollection<K, V>
+	GetKeys(): Dictionary_KeyCollection<K, V>
 	{
 		var keys = new Dictionary_KeyCollection<K, V> ();
 		for (var ks in this.keys) {
@@ -1045,7 +1068,7 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 		}
 		return keys;
 	}
-	get Values(): Dictionary_ValueCollection<K, V>
+	GetValues(): Dictionary_ValueCollection<K, V>
 	{
 		var vals = new Dictionary_ValueCollection<K, V> ();
 		for (var ks in this.values) {
@@ -1107,11 +1130,11 @@ class Regex extends NObject
 				if (typeof r[i] === "undefined") {}
 				else if (r[i].constructor === String)
 					text = r[i];
-				m.Groups.Add (new Group (text, loc));
+				m._AddGroup (new Group (text, loc));
 				if (i !== 0)
 					loc += text.length;
 			}
-			m.Success = true;
+			m._SetSuccess(true);
 		}
 		return m;
 	}
@@ -1129,21 +1152,49 @@ class Regex extends NObject
 
 class Match extends NObject
 {
-	Groups: List<Group> = new List<Group> ();
-	Success: boolean = false;
+	private _groupcoll: List<Group> = new List<Group> ();
+	private _success: boolean = false;
+	GetGroups(): List<Group>
+	{
+		return this._groupcoll;
+	}
+	_AddGroup(group: Group) {
+		this._groupcoll.Add(group);
+	}
+	GetSuccess(): boolean
+	{
+		return this._success;
+	}
+	_SetSuccess(value: boolean)
+	{
+		this._success = value;
+	}
 }
 
 class Group extends NObject
 {
-	Length: number = 0;
-	Value: string = "";
-	Index: number = 0;
+	private _length: number;
+	private _value: string;
+	private _index: number;
+
+	GetLength(): number
+	{
+		return this._length;
+	}
+	GetValue(): string
+	{
+		return this._value;
+	}
+	GetIndex(): number
+	{
+		return this._index
+	}
 	constructor(value: string, index: number)
 	{
 		super();
-		this.Value = value||"";
-		this.Length = this.Value.length;
-		this.Index = index;
+		this._value = value||"";
+		this._length = this._value.length;
+		this._index = index;
 	}
 }
 
@@ -1251,7 +1302,7 @@ class StringBuilder extends NObject
 		return this.parts.join("");
 	}
 
-	get Length(): number
+	GetLength(): number
 	{
 		var len = 0;
 		for (var i = 0; i < this.parts.length; i++) {
@@ -1369,7 +1420,7 @@ class Enumerable extends NObject
 		var r = new List<U>();
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			r.Add(selector(i.Current));
+			r.Add(selector(i.GetCurrent()));
 		}
 		return r;
 	}
@@ -1387,8 +1438,8 @@ class Enumerable extends NObject
 		var r = new List<T>();
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (p(i.Current))
-				r.Add(i.Current);
+			if (p(i.GetCurrent()))
+				r.Add(i.GetCurrent());
 		}
 		return r;
 	}
@@ -1398,7 +1449,7 @@ class Enumerable extends NObject
 		var r = new List<T>();
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			r.Add(i.Current);
+			r.Add(i.GetCurrent());
 		}
 		r.array.sort(function(x, y) {
 			var sx = s(x);
@@ -1414,7 +1465,7 @@ class Enumerable extends NObject
 		var r = new List<T>();
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			r.Add(i.Current);
+			r.Add(i.GetCurrent());
 		}
 		r.array.sort(function(x, y) {
 			var sx = s(x);
@@ -1441,8 +1492,8 @@ class Enumerable extends NObject
 	{
 		var r = new List<T>();
 		var i = e.GetEnumerator();
-		while (r.Count < count && i.MoveNext()) {
-			r.Add(i.Current);
+		while (r.GetCount() < count && i.MoveNext()) {
+			r.Add(i.GetCurrent());
 		}
 		return r;
 	}
@@ -1454,7 +1505,7 @@ class Enumerable extends NObject
 		var j = 0;
 		while (i.MoveNext()) {
 			if (j >= count)
-				r.Add(i.Current);
+				r.Add(i.GetCurrent());
 			j++;
 		}
 		return r;
@@ -1465,9 +1516,9 @@ class Enumerable extends NObject
 		var d = new Dictionary<T,T> ();
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			d.set_Item(i.Current, null);
+			d.set_Item(i.GetCurrent(), null);
 		}
-		return d.Keys;
+		return d.GetKeys();
 	}
 
 	static Cast<T>(e: IEnumerable<T>): IEnumerable<T>
@@ -1481,7 +1532,7 @@ class Enumerable extends NObject
 		// var i = e.GetEnumerator();
 		// var r = new List<U>();
 		// while (i.MoveNext()) {
-		// 	if (i.Current instanceof U) r.Add (i.Current);
+		// 	if (i.GetCurrent() instanceof U) r.Add (i.GetCurrent());
 		// }
 		// return r;
 		throw new NotImplementedException ();
@@ -1491,7 +1542,7 @@ class Enumerable extends NObject
 	{
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (i.Current === val)
+			if (i.GetCurrent() === val)
 				return true;
 		}
 		return false;
@@ -1503,8 +1554,8 @@ class Enumerable extends NObject
 	{
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (p === null || p(i.Current))
-				return i.Current;
+			if (p === null || p(i.GetCurrent()))
+				return i.GetCurrent();
 		}
 		return null;
 	}
@@ -1516,8 +1567,8 @@ class Enumerable extends NObject
 		var i = e.GetEnumerator();
 		var last : T = null;
 		while (i.MoveNext()) {
-			if (p === null || p(i.Current))
-				last = i.Current;
+			if (p === null || p(i.GetCurrent()))
+				last = i.GetCurrent();
 		}
 		return last;
 	}
@@ -1530,8 +1581,8 @@ class Enumerable extends NObject
 		var last : T = null;
 		var gotLast = false;
 		while (i.MoveNext()) {
-			if (p === null || p(i.Current)) {
-				last = i.Current;
+			if (p === null || p(i.GetCurrent())) {
+				last = i.GetCurrent();
 				gotLast = true;
 			}
 		}
@@ -1545,8 +1596,8 @@ class Enumerable extends NObject
 	{
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (p === null || p(i.Current))
-				return i.Current;
+			if (p === null || p(i.GetCurrent()))
+				return i.GetCurrent();
 		}
 		throw new Exception("Not found");
 	}
@@ -1555,7 +1606,7 @@ class Enumerable extends NObject
 	{
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (p(i.Current))
+			if (p(i.GetCurrent()))
 				return true;
 		}
 		return false;
@@ -1565,7 +1616,7 @@ class Enumerable extends NObject
 	{
 		var i = e.GetEnumerator();
 		while (i.MoveNext()) {
-			if (!p(i.Current))
+			if (!p(i.GetCurrent()))
 				return false;
 		}
 		return true;
@@ -1640,12 +1691,26 @@ class Debug extends NObject
 class Thread extends NObject
 {
 	private static nextId: number = 1;
-	static CurrentThread: Thread = new Thread();	
-	ManagedThreadId: number;
+	private static currentThread: Thread = new Thread();
+	private managedThreadId: number;
+	static GetCurrentThread(): Thread
+	{
+		return Thread.currentThread;
+	};
+	// not sure, setter shouldn't be here, but implementation as a whole is far from c# version.
+	// in any case, Thread most likely won't be used in js code
+	static SetCurrentThread(thread: Thread)
+	{
+		Thread.currentThread = thread;
+	}
+
+	GetManagedThreadId(): number{
+		return this.managedThreadId;
+	}
 	constructor()
 	{
 		super();
-		this.ManagedThreadId = Thread.nextId++;
+		this.managedThreadId = Thread.nextId++;
 	}
 }
 
