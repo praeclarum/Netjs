@@ -18,12 +18,13 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using ICSharpCode.Decompiler;
-using ICSharpCode.Decompiler.Ast;
+using ICSharpCode.Decompiler.CSharp.Syntax;
 using Mono.Cecil;
+using ICSharpCode.Decompiler.CSharp.Resolver;
 
 namespace Netjs
 {
-	public class App : IAssemblyResolver
+	public class App : IAssemblyResolver, CSharpResolver
 	{
 		class Config
 		{
@@ -118,19 +119,19 @@ namespace Netjs
 			}
 
 			Step ("Decompiling IL to C#");
-			var context = new DecompilerContext (firstAsm.MainModule);
-			context.Settings.ForEachStatement = false;
-			context.Settings.ObjectOrCollectionInitializers = false;
-			context.Settings.UsingStatement = false;
-			context.Settings.AsyncAwait = false;
-			context.Settings.AutomaticProperties = true;
-			context.Settings.AutomaticEvents = true;
-			context.Settings.QueryExpressions = false;
-			context.Settings.AlwaysGenerateExceptionVariableForCatchBlocks = true;
-			context.Settings.UsingDeclarations = false;
-			context.Settings.FullyQualifyAmbiguousTypeNames = true;
-			context.Settings.YieldReturn = false;
-			var builder = new AstBuilder (context);
+			var settings = new DecompilerSettings ();
+			settings.ForEachStatement = false;
+			settings.ObjectOrCollectionInitializers = false;
+			settings.UsingStatement = false;
+			settings.AsyncAwait = false;
+			settings.AutomaticProperties = true;
+			settings.AutomaticEvents = true;
+			settings.QueryExpressions = false;
+			settings.AlwaysGenerateExceptionVariableForCatchBlocks = true;
+			settings.UsingDeclarations = false;
+			settings.FullyQualifyAmbiguousTypeNames = true;
+			settings.YieldReturn = false;
+			var builder = new TypeSystemAstBuilder (this);
 			var decompiled = new HashSet<string> ();
 			for (;;) {
 				var a = decompileAssemblies.FirstOrDefault (x => !decompiled.Contains (x.FullName));
@@ -238,6 +239,10 @@ namespace Netjs
 		{
 			//Info ("R4: {0}", fullName);
 			return null;
+		}
+
+		public void Dispose ()
+		{
 		}
 
 		#endregion

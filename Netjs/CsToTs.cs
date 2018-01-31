@@ -15,11 +15,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using ICSharpCode.Decompiler.Ast.Transforms;
 using ICSharpCode.NRefactory.CSharp;
-using ICSharpCode.NRefactory.TypeSystem;
 using Mono.Cecil;
 using ICSharpCode.NRefactory;
+using ICSharpCode.Decompiler.CSharp.Transforms;
+using ICSharpCode.Decompiler.CSharp.Syntax;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace Netjs
 {
@@ -34,10 +35,10 @@ namespace Netjs
 			ES3Compatible = es3Compatible;
 		}
 
-		public void Run (AstNode compilationUnit)
+		public void Run (AstNode compilationUnit, TransformContext context)
 		{
 			foreach (var t in GetTransforms ()) {
-				t.Run (compilationUnit);
+				t.Run (compilationUnit, context);
 			}
 		}
 
@@ -102,7 +103,7 @@ namespace Netjs
 
 		class CallStaticCtors : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 
@@ -128,7 +129,7 @@ namespace Netjs
 
 		class NewArraysNeedDefaultValues : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -276,7 +277,7 @@ namespace Netjs
 
 		class ReplaceObjectEquals : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -306,7 +307,7 @@ namespace Netjs
 
 		class NullableChecks : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -329,7 +330,7 @@ namespace Netjs
 
 		class FixTypeOf : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -348,7 +349,7 @@ namespace Netjs
 
 		class InitializeFields : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -388,7 +389,7 @@ namespace Netjs
 
 		class OrderClasses : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				var types = compilationUnit.Descendants.OfType<TypeDeclaration> ().ToList ();
 				if (types.Count == 0)
@@ -589,7 +590,7 @@ namespace Netjs
 			readonly HashSet<string> keywords = new HashSet<string> {
 				"arguments",
 			};
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -641,7 +642,7 @@ namespace Netjs
 
 		class MakeWhileLoop : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -681,7 +682,7 @@ namespace Netjs
 
 		class RemoveEmptySwitch : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -704,7 +705,7 @@ namespace Netjs
 		{
 			static int nextId = 1;
 
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (new MoveLabelsOutOfTry ());
 				compilationUnit.AcceptVisitor (this);
@@ -1107,7 +1108,7 @@ namespace Netjs
 				var l = new LabelStatement {
 					Label = "_" + name + (nextId++),
 				};
-				s.Parent.InsertChildBefore (s, l, (ICSharpCode.NRefactory.Role<Statement>)s.Role);
+				s.Parent.InsertChildBefore (s, l, (Role<Statement>)s.Role);
 				return l;
 			}
 
@@ -1313,7 +1314,7 @@ namespace Netjs
 						switchStatement.Parent.InsertChildAfter (
 							switchStatement,
 							endLabel,
-							(ICSharpCode.NRefactory.Role<Statement>)switchStatement.Role);
+							(Role<Statement>)switchStatement.Role);
 					}
 
 					foreach (var ls in labelledSections) {
@@ -1361,7 +1362,7 @@ namespace Netjs
 
 		class PassArraysAsEnumerables : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1428,7 +1429,7 @@ namespace Netjs
 
 		class InlineEnumMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1466,7 +1467,7 @@ namespace Netjs
 
 		class StringConstructorsToMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1498,7 +1499,7 @@ namespace Netjs
 
 		class EnsureAtLeastOneCtor : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1523,7 +1524,7 @@ namespace Netjs
 
 		class CharsToNumbers : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1576,7 +1577,7 @@ namespace Netjs
 
 		class MakeSuperCtorFirst : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1609,7 +1610,7 @@ namespace Netjs
 
 		class FixGenericsThatUseObject : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1646,7 +1647,7 @@ namespace Netjs
 
 		class RemoveNonGenericEnumerable : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1682,7 +1683,7 @@ namespace Netjs
 
 		class RemovePrivateInterfaceOverloads : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1722,7 +1723,7 @@ namespace Netjs
 
 		class RemoveGenericArgsInIsExpr : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1742,7 +1743,7 @@ namespace Netjs
 
 		class RemoveDelegateConstructors : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1789,7 +1790,7 @@ namespace Netjs
 
 		class BitwiseOrToConditionalForBooleans : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -1811,7 +1812,7 @@ namespace Netjs
 
 		class ReplaceInstanceMembers : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2005,7 +2006,7 @@ namespace Netjs
 
 		class SuperPropertiesToThis : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2029,7 +2030,7 @@ namespace Netjs
 
 		class FixIsOp : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2057,7 +2058,7 @@ namespace Netjs
 
 		class ExpandIndexers : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				var ei = new EI ();
 				ei.Changed = true;
@@ -2108,7 +2109,7 @@ namespace Netjs
 
 		class ExpandOperators : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}	
@@ -2210,15 +2211,15 @@ namespace Netjs
 				return tr;
 			}
 
-			var ti = expr.Annotation<ICSharpCode.Decompiler.Ast.TypeInformation> ();
-			if (ti != null) {
-				return ti.InferredType;
-			}
+			//var ti = expr.Annotation<TypeInformation> ();
+			//if (ti != null) {
+			//	return ti.InferredType;
+			//}
 
-			var ilv = expr.Annotation<ICSharpCode.Decompiler.ILAst.ILVariable> ();
-			if (ilv != null) {
-				return ilv.Type;
-			}
+			//var ilv = expr.Annotation<ICSharpCode.Decompiler.IL.ILVariable> ();
+			//if (ilv != null) {
+			//	return ilv.Type.ToTypeReference();
+			//}
 
 			var fr = expr.Annotation<FieldDefinition> ();
 			if (fr != null) {
@@ -2243,7 +2244,7 @@ namespace Netjs
 
 		class AccessorsToInvocations : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				if (ES3Compatible) // otherwise usual accessors are used
 				{
@@ -2303,7 +2304,7 @@ namespace Netjs
 
 		class Renames : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2345,7 +2346,7 @@ namespace Netjs
 
 		class RemoveEnumBaseType : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2362,7 +2363,7 @@ namespace Netjs
 
 		class RemoveConstraints : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2382,7 +2383,7 @@ namespace Netjs
 
 		class FixBadNames : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2400,7 +2401,7 @@ namespace Netjs
 
 		class FlattenNamespaces : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				var ns = compilationUnit.Children.OfType<NamespaceDeclaration> ();
 
@@ -2418,7 +2419,7 @@ namespace Netjs
 
 		class MakePrimitiveTypesJsTypes : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2487,7 +2488,7 @@ namespace Netjs
 
 		class AddReferences : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				var filename = ES3Compatible ? "mscorlib.es3.ts" : "mscorlib.ts";
 				var c = new Comment (string.Format("/<reference path='{0}'/>", filename));
@@ -2498,7 +2499,7 @@ namespace Netjs
 
 		class StructToClass : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2517,7 +2518,7 @@ namespace Netjs
 
 		class IndexersToMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2562,7 +2563,7 @@ namespace Netjs
 
 		class ReplaceDefault : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2590,7 +2591,7 @@ namespace Netjs
 
 		class MakeNullableExplicit : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (new FixAssignments ());
 				compilationUnit.AcceptVisitor (new ComposedToNullable ());
@@ -2636,7 +2637,7 @@ namespace Netjs
 
 		class AnonymousInitializersNeedNames : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2656,7 +2657,7 @@ namespace Netjs
 
 		class FixCatches : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2726,7 +2727,7 @@ namespace Netjs
 
 		class FixEmptyThrow : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2759,7 +2760,7 @@ namespace Netjs
 
 		class OperatorDeclsToMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2789,7 +2790,7 @@ namespace Netjs
 
 		class InlineDelegates : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -2929,7 +2930,7 @@ namespace Netjs
 
 		class FixEvents : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (new FixEvents1 ());
 				compilationUnit.AcceptVisitor (new FixEvents2 ());
@@ -3014,7 +3015,7 @@ namespace Netjs
 
 		class AddAbstractMethodBodies : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3033,7 +3034,7 @@ namespace Netjs
 
 		class RemoveAttributes : IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				foreach (var a in compilationUnit.Children.OfType<AttributeSection> ()) {
 					a.Remove ();
@@ -3043,7 +3044,7 @@ namespace Netjs
 
 		class LiftNestedClasses : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3133,7 +3134,7 @@ namespace Netjs
 
 		class WrapRefArgs : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3225,7 +3226,7 @@ namespace Netjs
 
 		class StaticCtorsToMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3255,7 +3256,7 @@ namespace Netjs
 
 		class MergeOverloads : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3365,7 +3366,7 @@ namespace Netjs
 
 		class MergeCtors : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3589,7 +3590,7 @@ namespace Netjs
 
 		class PropertiesToMethods : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}
@@ -3736,7 +3737,7 @@ namespace Netjs
 
 		class RemoveModifiers : DepthFirstAstVisitor, IAstTransform
 		{
-			public void Run (AstNode compilationUnit)
+			public void Run (AstNode compilationUnit, TransformContext context)
 			{
 				compilationUnit.AcceptVisitor (this);
 			}

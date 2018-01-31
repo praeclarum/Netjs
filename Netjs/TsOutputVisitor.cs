@@ -20,10 +20,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using ICSharpCode.NRefactory.PatternMatching;
-using ICSharpCode.NRefactory.TypeSystem;
+using ICSharpCode.Decompiler.CSharp.TypeSystem;
 using ICSharpCode.NRefactory.CSharp;
+using ICSharpCode.Decompiler.CSharp.Syntax;
+using ICSharpCode.Decompiler.CSharp.OutputVisitor;
 using ICSharpCode.NRefactory;
+using ICSharpCode.Decompiler.CSharp.Syntax.PatternMatching;
+using ICSharpCode.Decompiler.TypeSystem;
 
 namespace Netjs
 {
@@ -32,7 +35,7 @@ namespace Netjs
 	/// </summary>
 	public class TsOutputVisitor : IAstVisitor
 	{
-		readonly IOutputFormatter formatter;
+		readonly TokenWriter formatter;
 		readonly CSharpFormattingOptions policy;
 		readonly Stack<AstNode> containerStack = new Stack<AstNode> ();
 		readonly Stack<AstNode> positionStack = new Stack<AstNode> ();
@@ -62,11 +65,11 @@ namespace Netjs
 			if (formattingPolicy == null) {
 				throw new ArgumentNullException ("formattingPolicy");
 			}
-			this.formatter = new TextWriterOutputFormatter (textWriter);
+			this.formatter = new TextWriterTokenWriter (textWriter);
 			this.policy = formattingPolicy;
 		}
 
-		public TsOutputVisitor (IOutputFormatter formatter, CSharpFormattingOptions formattingPolicy)
+		public TsOutputVisitor (TokenWriter formatter, CSharpFormattingOptions formattingPolicy)
 		{
 			if (formatter == null) {
 				throw new ArgumentNullException ("formatter");
@@ -176,7 +179,7 @@ namespace Netjs
 			WriteSpecialsUpToRole(Roles.Comma, nextNode);
 			Space(policy.SpaceBeforeBracketComma);
 			// TODO: Comma policy has changed.
-			formatter.WriteToken(",");
+			formatter.WriteToken (Roles.Comma, ",");
 			lastWritten = LastWritten.Other;
 			Space(!noSpaceAfterComma && policy.SpaceAfterBracketComma);
 			// TODO: Comma policy has changed.
@@ -301,7 +304,7 @@ namespace Netjs
 			if (lastWritten == LastWritten.KeywordOrIdentifier) {
 				formatter.Space();
 			}
-			formatter.WriteKeyword(token);
+			formatter.WriteKeyword(tokenRole, token);
 			lastWritten = LastWritten.KeywordOrIdentifier;
 		}
 
@@ -322,12 +325,12 @@ namespace Netjs
 					Space();
 				}
 				// this space is not strictly required, so we call Space()
-				formatter.WriteToken("$");
+				formatter.WriteToken(null, "$");
 			} else if (lastWritten == LastWritten.KeywordOrIdentifier) {
 				formatter.Space();
 				// this space is strictly required, so we directly call the formatter
 			}
-			formatter.WriteIdentifier(identifier);
+			formatter.WriteToken(null, identifier);
 			lastWritten = LastWritten.KeywordOrIdentifier;
 		}
 
@@ -352,7 +355,7 @@ namespace Netjs
 				|| lastWritten == LastWritten.Division && token [0] == '*') {
 				formatter.Space();
 			}
-			formatter.WriteToken(token);
+			formatter.WriteToken(null, token);
 			if (token == "+") {
 				lastWritten = LastWritten.Plus;
 			} else if (token == "-") {
@@ -411,14 +414,61 @@ namespace Netjs
 		void OpenBrace(BraceStyle style)
 		{
 			WriteSpecialsUpToRole(Roles.LBrace);
-			formatter.OpenBrace(style);
+			switch (style) {
+				case BraceStyle.DoNotChange:
+				case BraceStyle.EndOfLine:
+				case BraceStyle.BannerStyle:
+					formatter.WriteToken (Roles.LBrace, "{");
+					break;
+				case BraceStyle.EndOfLineWithoutSpace:
+					formatter.WriteToken (Roles.LBrace, "{");
+					break;
+				case BraceStyle.NextLine:
+					formatter.WriteToken (Roles.LBrace, "{");
+					break;
+				case BraceStyle.NextLineShifted:
+					NewLine ();
+					formatter.Indent ();
+					formatter.WriteToken (Roles.LBrace, "{");
+					NewLine ();
+					return;
+				case BraceStyle.NextLineShifted2:
+					NewLine ();
+					formatter.Indent ();
+					formatter.WriteToken (Roles.LBrace, "{");
+					break;
+				default:
+					throw new ArgumentOutOfRangeException ();
+			}
+			formatter.Indent ();
+			NewLine ();
 			lastWritten = LastWritten.Other;
 		}
 
 		void CloseBrace(BraceStyle style)
 		{
 			WriteSpecialsUpToRole(Roles.RBrace);
-			formatter.CloseBrace(style);
+			switch (style) {
+				case BraceStyle.DoNotChange:
+				case BraceStyle.EndOfLine:
+				case BraceStyle.EndOfLineWithoutSpace:
+				case BraceStyle.NextLine:
+					formatter.Unindent ();
+					formatter.WriteToken (Roles.RBrace, "}");
+					break;
+				case BraceStyle.BannerStyle:
+				case BraceStyle.NextLineShifted:
+					formatter.WriteToken (Roles.RBrace, "}");
+					formatter.Unindent ();
+					break;
+				case BraceStyle.NextLineShifted2:
+					formatter.Unindent ();
+					formatter.WriteToken (Roles.RBrace, "}");
+					formatter.Unindent ();
+					break;
+				default:
+					throw new ArgumentOutOfRangeException ();
+			}
 			lastWritten = LastWritten.Other;
 		}
 
@@ -882,12 +932,35 @@ namespace Netjs
 			EndNode(directionExpression);
 		}
 
+		public virtual void VisitOutVarDeclarationExpression (OutVarDeclarationExpression outVarDeclarationExpression)
+		{
+			StartNode (outVarDeclarationExpression);
+
+			WriteKeyword (OutVarDeclarationExpression.OutKeywordRole);
+			Space ();
+			outVarDeclarationExpression.Type.AcceptVisitor (this);
+			Space ();
+			outVarDeclarationExpression.Expression.AcceptVisitor (this);
+
+			EndNode (outVarDeclarationExpression);
+		}
+
 		public void VisitIdentifierExpression(IdentifierExpression identifierExpression)
 		{
 			StartNode(identifierExpression);
 			WriteIdentifier(identifierExpression.Identifier);
 			WriteTypeArguments(identifierExpression.TypeArguments);
 			EndNode(identifierExpression);
+		}
+
+		void IAstVisitor.VisitNullNode (AstNode nullNode)
+		{
+		}
+
+		void IAstVisitor.VisitErrorNode (AstNode errorNode)
+		{
+			StartNode (errorNode);
+			EndNode (errorNode);
 		}
 
 		public void VisitIndexerExpression(IndexerExpression indexerExpression)
@@ -1040,12 +1113,6 @@ namespace Netjs
 			EndNode(pointerReferenceExpression);
 		}
 
-		public void VisitEmptyExpression(EmptyExpression emptyExpression)
-		{
-			StartNode(emptyExpression);
-			EndNode(emptyExpression);
-		}
-
 		#region VisitPrimitiveExpression
 		public void VisitPrimitiveExpression(PrimitiveExpression primitiveExpression)
 		{
@@ -1056,14 +1123,6 @@ namespace Netjs
 				WritePrimitiveValue(primitiveExpression.Value);
 			}
 			EndNode(primitiveExpression);
-		}
-
-		public static string PrintPrimitiveValue(object val)
-		{
-			StringWriter writer = new StringWriter();
-			TsOutputVisitor visitor = new TsOutputVisitor(writer, new CSharpFormattingOptions());
-			visitor.WritePrimitiveValue(val);
-			return writer.ToString();
 		}
 
 		void WritePrimitiveValue(object val)
@@ -1084,13 +1143,13 @@ namespace Netjs
 			}
 
 			if (val is string) {
-				formatter.WriteToken("\"" + ConvertString(val.ToString()) + "\"");
+				formatter.WriteToken(null, "\"" + ConvertString(val.ToString()) + "\"");
 				lastWritten = LastWritten.Other;
 			} else if (val is char) {
-				formatter.WriteToken("'" + ConvertCharLiteral((char)val) + "'");
+				formatter.WriteToken(null, "'" + ConvertCharLiteral((char)val) + "'");
 				lastWritten = LastWritten.Other;
 			} else if (val is decimal) {
-				formatter.WriteToken(((decimal)val).ToString(NumberFormatInfo.InvariantInfo));
+				formatter.WriteToken(null, ((decimal)val).ToString(NumberFormatInfo.InvariantInfo));
 				lastWritten = LastWritten.Other;
 			} else if (val is float) {
 				float f = (float)val;
@@ -1110,9 +1169,9 @@ namespace Netjs
 					// negative zero is a special case
 					// (again, not a primitive expression, but it's better to handle
 					// the special case here than to do it in all code generators)
-					formatter.WriteToken("-");
+					formatter.WriteToken(null, "-");
 				}
-				formatter.WriteToken(f.ToString("R", NumberFormatInfo.InvariantInfo));
+				formatter.WriteToken(null, f.ToString("R", NumberFormatInfo.InvariantInfo));
 				lastWritten = LastWritten.Other;
 			} else if (val is double) {
 				double f = (double)val;
@@ -1132,13 +1191,13 @@ namespace Netjs
 					// negative zero is a special case
 					// (again, not a primitive expression, but it's better to handle
 					// the special case here than to do it in all code generators)
-					formatter.WriteToken("-");
+					formatter.WriteToken(null, "-");
 				}
 				string number = f.ToString("R", NumberFormatInfo.InvariantInfo);
 				if (number.IndexOf('.') < 0 && number.IndexOf('E') < 0) {
 					number += ".0";
 				}
-				formatter.WriteToken(number);
+				formatter.WriteToken(null, number);
 				// needs space if identifier follows number; this avoids mistaking the following identifier as type suffix
 				lastWritten = LastWritten.KeywordOrIdentifier;
 			} else if (val is IFormattable) {
@@ -1149,11 +1208,11 @@ namespace Netjs
 				//				} else {
 				b.Append(((IFormattable)val).ToString(null, NumberFormatInfo.InvariantInfo));
 				//				}
-				formatter.WriteToken(b.ToString());
+				formatter.WriteToken(null, b.ToString());
 				// needs space if identifier follows number; this avoids mistaking the following identifier as type suffix
 				lastWritten = LastWritten.KeywordOrIdentifier;
 			} else {
-				formatter.WriteToken(val.ToString());
+				formatter.WriteToken(null, val.ToString());
 				lastWritten = LastWritten.Other;
 			}
 		}
@@ -1248,6 +1307,15 @@ namespace Netjs
 			StartNode(thisReferenceExpression);
 			WriteKeyword("this", thisReferenceExpression.Role);
 			EndNode(thisReferenceExpression);
+		}
+
+		public virtual void VisitThrowExpression (ThrowExpression throwExpression)
+		{
+			StartNode (throwExpression);
+			WriteKeyword (ThrowExpression.ThrowKeywordRole);
+			Space ();
+			throwExpression.Expression.AcceptVisitor (this);
+			EndNode (throwExpression);
 		}
 
 		public void VisitTypeOfExpression(TypeOfExpression typeOfExpression)
@@ -1453,7 +1521,7 @@ namespace Netjs
 		#endregion
 
 		#region GeneralScope
-		public void VisitAttribute(ICSharpCode.NRefactory.CSharp.Attribute attribute)
+		public void VisitAttribute(ICSharpCode.Decompiler.CSharp.Syntax.Attribute attribute)
 		{
 			StartNode(attribute);
 			attribute.Type.AcceptVisitor(this);
@@ -2690,49 +2758,52 @@ namespace Netjs
 		#region Documentation Reference
 		public void VisitDocumentationReference(DocumentationReference documentationReference)
 		{
-			StartNode(documentationReference);
+			StartNode (documentationReference);
 			if (!documentationReference.DeclaringType.IsNull) {
-				documentationReference.DeclaringType.AcceptVisitor(this);
-				if (documentationReference.EntityType != EntityType.TypeDefinition) {
-					WriteToken(Roles.Dot);
+				documentationReference.DeclaringType.AcceptVisitor (this);
+				if (documentationReference.SymbolKind != SymbolKind.TypeDefinition) {
+					WriteToken (Roles.Dot);
 				}
 			}
-			switch (documentationReference.EntityType) {
-			case EntityType.TypeDefinition:
-				// we already printed the DeclaringType
-				break;
-			case EntityType.Indexer:
-				WriteKeyword(IndexerDeclaration.ThisKeywordRole);
-				break;
-			case EntityType.Operator:
-				var opType = documentationReference.OperatorType;
-				if (opType == OperatorType.Explicit) {
-					WriteKeyword(OperatorDeclaration.ExplicitRole);
-				} else if (opType == OperatorType.Implicit) {
-					WriteKeyword(OperatorDeclaration.ImplicitRole);
-				}
-				WriteKeyword(OperatorDeclaration.OperatorKeywordRole);
-				Space();
-				if (opType == OperatorType.Explicit || opType == OperatorType.Implicit) {
-					documentationReference.ConversionOperatorReturnType.AcceptVisitor(this);
-				} else {
-					WriteToken(OperatorDeclaration.GetToken(opType), OperatorDeclaration.GetRole(opType));
-				}
-				break;
-			default:
-				WriteIdentifier(documentationReference.MemberName);
-				break;
+			switch (documentationReference.SymbolKind) {
+				case SymbolKind.TypeDefinition:
+					// we already printed the DeclaringType
+					break;
+				case SymbolKind.Indexer:
+					WriteKeyword (IndexerDeclaration.ThisKeywordRole);
+					break;
+				case SymbolKind.Operator:
+					var opType = documentationReference.OperatorType;
+					if (opType == OperatorType.Explicit) {
+						WriteKeyword (OperatorDeclaration.ExplicitRole);
+					}
+					else if (opType == OperatorType.Implicit) {
+						WriteKeyword (OperatorDeclaration.ImplicitRole);
+					}
+					WriteKeyword (OperatorDeclaration.OperatorKeywordRole);
+					Space ();
+					if (opType == OperatorType.Explicit || opType == OperatorType.Implicit) {
+						documentationReference.ConversionOperatorReturnType.AcceptVisitor (this);
+					}
+					else {
+						WriteToken (OperatorDeclaration.GetToken (opType), OperatorDeclaration.GetRole (opType));
+					}
+					break;
+				default:
+					WriteIdentifier (documentationReference.GetChildByRole (Roles.Identifier));
+					break;
 			}
-			WriteTypeArguments(documentationReference.TypeArguments);
+			WriteTypeArguments (documentationReference.TypeArguments);
 			if (documentationReference.HasParameterList) {
-				Space(policy.SpaceBeforeMethodDeclarationParentheses);
-				if (documentationReference.EntityType == EntityType.Indexer) {
-					WriteCommaSeparatedListInBrackets(documentationReference.Parameters, policy.SpaceWithinMethodDeclarationParentheses);
-				} else {
-					WriteCommaSeparatedListInParenthesis(documentationReference.Parameters, policy.SpaceWithinMethodDeclarationParentheses);
+				Space (policy.SpaceBeforeMethodDeclarationParentheses);
+				if (documentationReference.SymbolKind == SymbolKind.Indexer) {
+					WriteCommaSeparatedListInBrackets (documentationReference.Parameters, policy.SpaceWithinMethodDeclarationParentheses);
+				}
+				else {
+					WriteCommaSeparatedListInParenthesis (documentationReference.Parameters, policy.SpaceWithinMethodDeclarationParentheses);
 				}
 			}
-			EndNode(documentationReference);
+			EndNode (documentationReference);
 		}
 		#endregion
 	}
