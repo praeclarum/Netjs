@@ -1,11 +1,11 @@
 // Copyright 2014 Frank A. Krueger
-// 
+//
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
-// 
+//
 //    http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,7 @@ class NObject
 		return x.toString ();
 	}
 	static GenericGetHashCode(x: any): number
-	{		
+	{
 		if (typeof x === "object") return x.GetHashCode();
 		return NString.GetHashCode (this.toString ());
 	}
@@ -101,8 +101,7 @@ class NArray
 {
 	static IndexOf<T> (values: T[], value: T): number
 	{
-		var i,
-		    n = values.length;
+		var i, n = values.length;
 		for (i = 0; i < n; i++) {
 			if (values[i] === value)
 				return i;
@@ -123,6 +122,21 @@ class NArray
 			return;
 		}
 		throw new NotImplementedException ();
+	}
+	static ConvertAll<T, V> (array: T[], convertFunc: (T) => V): V[]
+	{
+		if (array == null) {
+			return null;
+		}
+		return array.map(convertFunc);
+	}
+	static Reverse<T>(array: T[]): void
+	{
+		array.reverse();
+	}
+	static FindAll<T>(array: T[], predicate: (T) => boolean): T[]
+	{
+		return array.filter(predicate);
 	}
 }
 
@@ -210,7 +224,7 @@ class NChar
 
 class NString
 {
-    static Empty = "";
+	static Empty = "";
 	private static escapeRegExp(str: string){
 		var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
 			reHasRegExpChar = RegExp(reRegExpChar.source);
@@ -271,7 +285,7 @@ class NString
 	}
 	/*static Remove(str: string, startIndex: number): string*/
 	static Remove(str: string, startIndex: number, length: number): string
-    {
+	{
 		if (typeof length === undefined)
 		{
 		    return str.substring(0, startIndex);
@@ -280,7 +294,7 @@ class NString
 		{
 		    return str.substring(0, startIndex) + str.substring(startIndex + length);
 		}
-    }
+	}
 	/*static Remove(str: string, startIndex: number, length?: number): string
 	{
 		throw new NotImplementedException(); // do we care that ts->js compiler will get rid of this syntactic sugar?
@@ -328,21 +342,21 @@ class NString
 	}
 
 	static Format(format: string, arg0?: any, arg1?: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): string
-    {
+	{
 		if (arg0.constructor === Array)
-        {
-            var s = format,
-            i = arg0.length;
-            while (i--) {
-                s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arg0[i]);
-            }
-            return s;
-        }
+		{
+			var s = format,
+			i = arg0.length;
+			while (i--) {
+				s = s.replace(new RegExp('\\{' + i + '\\}', 'gm'), arg0[i]);
+			}
+			return s;
+		}
 		else
-        {
-            var args = [arg0, arg1, arg2, arg3, arg4, arg5];
-            return NString.Format(format, args);
-        }
+		{
+			var args = [arg0, arg1, arg2, arg3, arg4, arg5];
+			return NString.Format(format, args);
+		}
 	}
 	static IsNullOrEmpty(str: string): boolean
 	{
@@ -455,20 +469,20 @@ enum DateTimeKind
 }
 
 enum DayOfWeek {
-    Sunday = 0,
-    Monday = 1,
-    Tuesday = 2,
-    Wednesday = 3,
-    Thursday = 4,
-    Friday = 5,
-    Saturday = 6
+	Sunday = 0,
+	Monday = 1,
+	Tuesday = 2,
+	Wednesday = 3,
+	Thursday = 4,
+	Friday = 5,
+	Saturday = 6
 }
 
 class DateTime extends NObject
 {
 	private dt: Date;
 	private kind: DateTimeKind;
-	get Kind(): DateTimeKind { return this.kind; }	
+	get Kind(): DateTimeKind { return this.kind; }
 	get Year(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCFullYear() : this.dt.getFullYear(); }
 	get Month(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCMonth()+1 : this.dt.getMonth()+1; }
 	get Day(): number { return this.kind === DateTimeKind.Utc ? this.dt.getUTCDate() : this.dt.getDate(); }
@@ -480,7 +494,7 @@ class DateTime extends NObject
 		super();
 		this.dt = new Date(year, month-1, day);
 		this.kind = DateTimeKind.Unspecified;
-	}	
+	}
 	ToString(): string
 	{
 		return this.kind === DateTimeKind.Utc ? this.dt.toUTCString() : this.dt.toString();
@@ -535,7 +549,7 @@ class TimeSpan extends NObject
 	}
 	get Seconds(): number
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	static FromSeconds(seconds: number): TimeSpan
 	{
@@ -559,7 +573,7 @@ class NConsole extends NObject
 	static WriteLine (format: string, arg0: any)
 	static WriteLine (lineOrFormat: string, arg0?: any)
 	{
-		throw new NotImplementedException ();
+		console.log(lineOrFormat);
 	}
 	static Out: TextWriter;
 }
@@ -592,13 +606,13 @@ class ArgumentOutOfRangeException extends ArgumentException
 
 class EventArgs extends NObject
 {
-	
+
 }
 
 class EventHandler extends NObject
 {
 	Invoke (sender: any, e: EventArgs): void
-	{		
+	{
 	}
 }
 
@@ -615,22 +629,22 @@ class Environment
 
 class Convert extends NObject
 {
-    static ToUInt16 (str: string) : number
-    {
-        var value = Number(str);
-        if (value < 0) value = 0;
-        if (value >= 0xFFFF) value = 0xFFFF;
-        return value;
-    }
-    
-    static ToUInt32 (str: string) : number
-    {
-        var value = Number(str);
-        if (value < 0) value = 0;
-        if (value >= 0xFFFFFFFF) value = 0xFFFFFFFF;
-        return value;
-    }
-    
+	static ToUInt16 (str: string) : number
+	{
+		var value = Number(str);
+		if (value < 0) value = 0;
+		if (value >= 0xFFFF) value = 0xFFFF;
+		return value;
+	}
+
+	static ToUInt32 (str: string) : number
+	{
+		var value = Number(str);
+		if (value < 0) value = 0;
+		if (value >= 0xFFFFFFFF) value = 0xFFFFFFFF;
+		return value;
+	}
+
 	static ToString (num: number, radix: number): string
 	static ToString (num: number, provider: IFormatProvider): string
 	static ToString (num: number, radixOrProvider: any): string
@@ -784,6 +798,16 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 		return new List_Enumerator<T> (this);
 	}
 
+	Remove(item: T): boolean
+	{
+		var index = this.IndexOf(item);
+		if (index >= 0) {
+			this.RemoveAt(index);
+			return true;
+		}
+		return false;
+	}
+
 	RemoveAt(index: number): void
 	{
 		this.array.splice(index, 1);
@@ -804,6 +828,11 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 		this.array = new Array<T> ();
 	}
 
+	Sort(compare: (a: T, b: T) => number = null): void
+	{
+		this.array.sort(compare);
+	}
+
 	ToArray(): T[]
 	{
 		return this.array.slice(0);
@@ -821,6 +850,11 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 		this.array = newArray;
 	}
 
+	FindAll(predicate: (item: T) => boolean): IEnumerable<T>
+	{
+		return new Array_Enumerable(this.array.filter(predicate));
+	}
+
 	Reverse(): void
 	{
 		throw new NotImplementedException ();
@@ -829,6 +863,11 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 	IndexOf(item: T): number
 	{
 		return this.array.indexOf(item);
+	}
+
+	ForEach(action: (T) => void): void
+	{
+		this.array.forEach(action);
 	}
 }
 
@@ -885,7 +924,7 @@ class Stack<T> extends List<T>
 	}
 	Pop(): T
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 }
 
@@ -895,7 +934,7 @@ class HashSet<T> extends NObject implements IEnumerable<T>
 
 	Add(item: T): void
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 
 	GetEnumerator(): HashSet_Enumerator<T>
@@ -922,7 +961,7 @@ class HashSet_Enumerator<T> extends NObject implements IEnumerator<T>, IDisposab
 	}
 	get Current(): T
 	{
-		throw new NotImplementedException ();	
+		throw new NotImplementedException ();
 	}
 	Dispose(): void
 	{
@@ -948,7 +987,7 @@ interface IDictionary<K, V>
 }
 
 class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable<KeyValuePair<K, V>>
-{	
+{
 	private keys = {};
 	private values = {};
 
@@ -1087,6 +1126,27 @@ class Dictionary_ValueCollection_Enumerator<K, V> extends List_Enumerator<V>
 	}
 }
 
+class Tuple<T1, T2>
+{
+	Item1: T1;
+	Item2: T2;
+
+	constructor(p1: T1, p2: T2)
+	{
+		this.Item1 = p1;
+		this.Item2 = p2;
+	}
+
+	toString(): string
+	{
+		return this.Item1 + ',' + this.Item2;
+	}
+
+	static Create<T1, T2>(p1: T1, p2: T2): Tuple<T1, T2> {
+		return new Tuple<T1, T2>(p1, p2);
+	}
+}
+
 class Regex extends NObject
 {
 	private re: RegExp;
@@ -1211,7 +1271,7 @@ class BinaryWriter extends NObject
 	Flush(): void
 	{
 		throw new NotImplementedException ();
-	}	
+	}
 }
 
 
@@ -1283,21 +1343,21 @@ class TextReader extends NObject implements IDisposable
 {
 	ReadLine(): string
 	{
-		throw new NotSupportedException ();	
+		throw new NotSupportedException ();
 	}
 	ReadToEnd(): string
 	{
 		throw new NotSupportedException ();
 	}
 	Dispose(): void
-	{		
+	{
 	}
 }
 
 class StringReader extends TextReader
 {
 	private str: string;
-	private pos: number;	
+	private pos: number;
 	constructor(str: string)
 	{
 		super();
@@ -1336,10 +1396,10 @@ class Enumerable extends NObject
 {
 	static ToArray<T>(e: IEnumerable<T>): T[]
 	{
-		const result = [];
+		const result: T[] = [];
 		const enumerator = e.GetEnumerator ();
 		while (enumerator.MoveNext ()) {
-			result.push(enumerator.GetCurrent());
+			result.push(enumerator.Current);
 		}
 		return result;
 	}
@@ -1571,33 +1631,53 @@ class Enumerable extends NObject
 		return true;
 	}
 
-	static Count<T>(e: IEnumerable<T>): number
+	static Count<T>(e: IEnumerable<T>, p: (a: T)=>boolean = null): number
 	{
-		var result = 0;
-		var enumerator = e.GetEnumerator();
-		while (enumerator.MoveNext()) {
-			result++;
+		var count = 0;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			if (p == null || p(i.Current))
+				++count;
 		}
-		return result;
+		return count;
 	}
 
 	static Sum<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var sum = 0;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			sum += s != null ? s(i.Current) : <number><any>i.Current;
+		}
+		return sum;
 	}
 
 	static Max<T>(e: IEnumerable<T>): number
 	static Max<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	static Max<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var result = Number.MIN_VALUE;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			var value = s != null ? s(i.Current) : <number><any>i.Current;
+			if (value > result)
+				result = value;
+		}
+		return result;
 	}
 
 	static Min<T>(e: IEnumerable<T>): number
 	static Min<T>(e: IEnumerable<T>, s: (a: T)=>number): number
 	static Min<T>(e: IEnumerable<T>, s?: (a: T)=>number): number
 	{
-		throw new NotImplementedException ();
+		var result = Number.MAX_VALUE;
+		var i = e.GetEnumerator();
+		while (i.MoveNext()) {
+			var value = s != null ? s(i.Current) : <number><any>i.Current;
+			if (value < result)
+				result = value;
+		}
+		return result;
 	}
 
 	static ToDictionary<T,K,V>(e: IEnumerable<T>, keySelector: (T)=>K, elementSelector: (T)=>V): Dictionary<K,V>
@@ -1605,7 +1685,7 @@ class Enumerable extends NObject
 		var result = new Dictionary<K,V>();
 		var enumerator = e.GetEnumerator();
 		while (enumerator.MoveNext()) {
-			var current = enumerator.GetCurrent();
+			var current = enumerator.Current;
 			var key = keySelector(current);
 			var value = elementSelector(current);
 			result.Add(key, value);
@@ -1640,7 +1720,7 @@ class Debug extends NObject
 class Thread extends NObject
 {
 	private static nextId: number = 1;
-	static CurrentThread: Thread = new Thread();	
+	static CurrentThread: Thread = new Thread();
 	ManagedThreadId: number;
 	constructor()
 	{
@@ -1685,4 +1765,3 @@ class WebClient extends NObject
 		throw new NotImplementedException ();
 	}
 }
-
