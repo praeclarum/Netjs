@@ -1399,7 +1399,7 @@ class Enumerable extends NObject
 		const result: T[] = [];
 		const enumerator = e.GetEnumerator ();
 		while (enumerator.MoveNext ()) {
-			result.push(enumerator.GetCurrent());
+			result.push(enumerator.Current);
 		}
 		return result;
 	}
@@ -1685,7 +1685,7 @@ class Enumerable extends NObject
 		var result = new Dictionary<K,V>();
 		var enumerator = e.GetEnumerator();
 		while (enumerator.MoveNext()) {
-			var current = enumerator.GetCurrent();
+			var current = enumerator.Current;
 			var key = keySelector(current);
 			var value = elementSelector(current);
 			result.Add(key, value);
