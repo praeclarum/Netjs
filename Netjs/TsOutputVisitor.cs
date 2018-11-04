@@ -83,7 +83,6 @@ namespace Netjs
 		{
 			// Ensure that nodes are visited in the proper nested order.
 			// Jumps to different subtrees are allowed only for the child of a placeholder node.
-			Debug.Assert(containerStack.Count == 0 || node.Parent == containerStack.Peek() || containerStack.Peek().NodeType == NodeType.Pattern);
 			if (positionStack.Count > 0) {
 				WriteSpecialsUpToNode(node);
 			}
