@@ -569,11 +569,11 @@ class TimeSpan extends NObject
 
 class NConsole extends NObject
 {
-	static WriteLine (line: string)
-	static WriteLine (format: string, arg0: any)
-	static WriteLine (lineOrFormat: string, arg0?: any)
+	static WriteLine (line: any)
+	static WriteLine (format: any, arg0: any)
+	static WriteLine (lineOrFormat: any, arg0?: any)
 	{
-		console.log(lineOrFormat);
+		console.log(lineOrFormat, arg0);
 	}
 	static Out: TextWriter;
 }
@@ -1711,7 +1711,7 @@ class PropertyChangedEventArgs extends EventArgs
 
 class Debug extends NObject
 {
-	static WriteLine (text: string): void
+	static WriteLine (text: any): void
 	{
 		console.log(text);
 	}
