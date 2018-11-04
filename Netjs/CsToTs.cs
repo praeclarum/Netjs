@@ -2200,6 +2200,35 @@ namespace Netjs
 
 		static TypeReference GetTypeRef (AstNode expr)
 		{
+			var anno = GetAnnotationType (expr);
+
+			if (expr is InvocationExpression invoke && invoke.Target is MemberReferenceExpression member && member.MemberName.StartsWith ("op_")) {
+				var argTypes = invoke.Arguments.Select (x => GetTypeRef (x)).ToList ();
+				var declType = GetTypeDef (member.Target) ?? anno?.Resolve ();
+				var methodDefs =
+					declType?.Methods
+					.Where (x => x.Name == member.MemberName && x.Parameters.Count == argTypes.Count)
+					.OrderByDescending (x => x.Parameters.Zip(argTypes, (p,a)=>(p.ParameterType,a)).Count (z => z.a?.FullName == z.ParameterType?.FullName));
+				var methodDef = methodDefs?.FirstOrDefault ();
+				if (methodDef != null)
+					return methodDef.ReturnType;
+			}
+
+			if (anno != null)
+				return anno;
+
+			if (expr is IndexerExpression ie) {
+				var it = GetTypeRef (ie.Target);
+				if (it != null && it.IsArray) {
+					return it.GetElementType ();
+				}
+			}
+
+			return null;
+		}
+
+		static TypeReference GetAnnotationType (AstNode expr)
+		{
 			var td = expr.Annotation<TypeDefinition> ();
 			if (td != null) {
 				return td;
@@ -2228,14 +2257,6 @@ namespace Netjs
 			var pr = expr.Annotation<PropertyDefinition> ();
 			if (pr != null) {
 				return pr.PropertyType;
-			}
-
-			var ie = expr as IndexerExpression;
-			if (ie != null) {
-				var it = GetTypeRef (ie.Target);
-				if (it != null && it.IsArray) {
-					return it.GetElementType ();
-				}
 			}
 
 			return null;

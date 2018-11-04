@@ -192,8 +192,10 @@ namespace Netjs
 				var tscStartInfo = new ProcessStartInfo ("tsc", string.Join (" ", tscArgs.Select (x => $"\"{x}\"")));
 				var tscProcess = Process.Start (tscStartInfo);
 				tscProcess.WaitForExit ();
-				Error ("Failed to compile JavaScript");
-				return 3;
+				if (tscProcess.ExitCode != 0) {
+					Error ("Failed to compile JavaScript");
+					return 3;
+				}
 			}
 
 			Step ("Done in " + sw.Elapsed);

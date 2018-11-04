@@ -11,8 +11,8 @@
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/Netjs/bin/Debug/netcoreapp2.1/Netjs.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/Netjs",
+            "args": ["sample.dll"],
+            "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
             "stopAtEntry": false,

@@ -8,6 +8,8 @@ class Person
 		get { return FirstName + " " + LastName; }
 	}
 	public DateTime DateOfBirth { get; set; }
+	public int DaysOld => (int)((DateTime.Now - DateOfBirth).TotalDays + 0.5);
+	public bool AYearOld => (DateTime.Now - DateOfBirth) >= TimeSpan.FromDays (365);
 	public int Age {
 		get {
 			var now = DateTime.Now;
