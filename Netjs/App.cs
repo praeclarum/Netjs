@@ -76,7 +76,7 @@ namespace Netjs
 			}
 
 			if (config.ShowHelp) {
-				Console.WriteLine ("Netjs compiler, Copyright 2014-2016 Frank A. Krueger");
+				Console.WriteLine ($"Netjs compiler, Copyright 2014-{DateTime.Now.Year} Frank A. Krueger");
 				Console.WriteLine ("netjs [options] assembly-files");
 				Console.WriteLine ("   --help, -h           Show usage information");
 				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
