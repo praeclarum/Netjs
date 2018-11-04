@@ -436,7 +436,8 @@ namespace Mono.CSharp
 			// but returned ISymbolWriter does not have all what we need therefore some
 			// adaptor will be needed for now we alwayas emit MDB format when generating
 			// debug info
-			return Builder.DefineDynamicModule (module_name, module_name, false);
+			// return Builder.DefineDynamicModule (module_name, module_name, false);
+			throw new NotSupportedException ();
 		}
 
 		public virtual void Emit ()
@@ -748,11 +749,11 @@ namespace Mono.CSharp
 			//
 			// Add Win32 resources
 			//
-			if (Compiler.Settings.Win32ResourceFile != null) {
-				Builder.DefineUnmanagedResource (Compiler.Settings.Win32ResourceFile);
-			} else {
-				Builder.DefineVersionInfoResource ();
-			}
+			// if (Compiler.Settings.Win32ResourceFile != null) {
+			// 	Builder.DefineUnmanagedResource (Compiler.Settings.Win32ResourceFile);
+			// } else {
+			// 	Builder.DefineVersionInfoResource ();
+			// }
 
 			if (Compiler.Settings.Win32IconFile != null) {
 				builder_extra.DefineWin32IconResource (Compiler.Settings.Win32IconFile);
@@ -780,9 +781,9 @@ namespace Mono.CSharp
 								stream = new MemoryStream (File.ReadAllBytes (res.FileName));
 							}
 
-							module.Builder.DefineManifestResource (res.Name, stream, res.Attributes);
+							// module.Builder.DefineManifestResource (res.Name, stream, res.Attributes);
 						} else {
-							Builder.AddResourceFile (res.Name, Path.GetFileName (res.FileName), res.Attributes);
+							// Builder.AddResourceFile (res.Name, Path.GetFileName (res.FileName), res.Attributes);
 						}
 					}
 				}
@@ -832,7 +833,7 @@ namespace Mono.CSharp
 				if (Compiler.Settings.Target == Target.Module) {
 					SaveModule (pekind, machine);
 				} else {
-					Builder.Save (module.Builder.ScopeName, pekind, machine);
+					// Builder.Save (module.Builder.ScopeName, pekind, machine);
 				}
 			} catch (Exception e) {
 				Report.Error (16, "Could not write to file `" + name + "', cause: " + e.Message);
@@ -884,48 +885,48 @@ namespace Mono.CSharp
 				return;
 			}
 
-			PEFileKinds file_kind;
+			// PEFileKinds file_kind;
 
-			switch (Compiler.Settings.Target) {
-			case Target.Library:
-			case Target.Module:
-				file_kind = PEFileKinds.Dll;
-				break;
-			case Target.WinExe:
-				file_kind = PEFileKinds.WindowApplication;
-				break;
-			default:
-				file_kind = PEFileKinds.ConsoleApplication;
-				break;
-			}
+			// switch (Compiler.Settings.Target) {
+			// case Target.Library:
+			// case Target.Module:
+			// 	file_kind = PEFileKinds.Dll;
+			// 	break;
+			// case Target.WinExe:
+			// 	file_kind = PEFileKinds.WindowApplication;
+			// 	break;
+			// default:
+			// 	file_kind = PEFileKinds.ConsoleApplication;
+			// 	break;
+			// }
 
-			if (entry_point == null) {
-				string main_class = Compiler.Settings.MainClass;
-				if (main_class != null) {
-					// TODO: Handle dotted names
-					var texpr = module.GlobalRootNamespace.LookupType (module, main_class, 0, LookupMode.Probing, Location.Null);
-					if (texpr == null) {
-						Report.Error (1555, "Could not find `{0}' specified for Main method", main_class);
-						return;
-					}
+			// if (entry_point == null) {
+			// 	string main_class = Compiler.Settings.MainClass;
+			// 	if (main_class != null) {
+			// 		// TODO: Handle dotted names
+			// 		var texpr = module.GlobalRootNamespace.LookupType (module, main_class, 0, LookupMode.Probing, Location.Null);
+			// 		if (texpr == null) {
+			// 			Report.Error (1555, "Could not find `{0}' specified for Main method", main_class);
+			// 			return;
+			// 		}
 
-					var mtype = texpr.Type.MemberDefinition as ClassOrStruct;
-					if (mtype == null) {
-						Report.Error (1556, "`{0}' specified for Main method must be a valid class or struct", main_class);
-						return;
-					}
+			// 		var mtype = texpr.Type.MemberDefinition as ClassOrStruct;
+			// 		if (mtype == null) {
+			// 			Report.Error (1556, "`{0}' specified for Main method must be a valid class or struct", main_class);
+			// 			return;
+			// 		}
 
-					Report.Error (1558, mtype.Location, "`{0}' does not have a suitable static Main method", mtype.GetSignatureForError ());
-				} else {
-					string pname = file_name == null ? name : Path.GetFileName (file_name);
-					Report.Error (5001, "Program `{0}' does not contain a static `Main' method suitable for an entry point",
-						pname);
-				}
+			// 		Report.Error (1558, mtype.Location, "`{0}' does not have a suitable static Main method", mtype.GetSignatureForError ());
+			// 	} else {
+			// 		string pname = file_name == null ? name : Path.GetFileName (file_name);
+			// 		Report.Error (5001, "Program `{0}' does not contain a static `Main' method suitable for an entry point",
+			// 			pname);
+			// 	}
 
-				return;
-			}
+			// 	return;
+			// }
 
-			Builder.SetEntryPoint (entry_point.MethodBuilder, file_kind);
+			// Builder.SetEntryPoint (entry_point.MethodBuilder, file_kind);
 		}
 
 		void Error_ObsoleteSecurityAttribute (Attribute a, string option)

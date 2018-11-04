@@ -1,6 +1,7 @@
 
-.DS_Store
+*.DS_Store
 .dropbox.attr
+/packages
 bin
 obj
 Work
@@ -13,5 +14,5 @@ sample.dll
 sample.js
 sample.ts
 
-Dependencies/closure
+/Dependencies/closure
 

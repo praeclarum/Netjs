@@ -1,46 +1,26 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>8.0.30703</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Netjs</RootNamespace>
-    <AssemblyName>Netjs</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>netjs</ToolCommandName>
+    <PackageOutputPath>$(OutDir)</PackageOutputPath>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <DefineConstants>FULL_AST</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug</OutputPath>
-    <WarningLevel>4</WarningLevel>
-    <DebugSymbols>true</DebugSymbols>
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <Description>Compile .NET assemblies to JavaScript</Description>
+    <Company>Frank A. Krueger</Company>
+    <Copyright>Copyright © Frank A. Krueger</Copyright>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release</OutputPath>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="Mono.Cecil">
-      <HintPath>..\Dependencies\Mono.Cecil.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Drawing" />
+    <PackageReference Include="Mono.Cecil" Version="0.9.6.4" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+    <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="App.cs" />
-    <Compile Include="FunctionType.cs" />
-    <Compile Include="TsOutputVisitor.cs" />
-    <Compile Include="CsToTs.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Dependencies\NRefactory\NRefactory.csproj">
-      <Project>{0709E65F-6943-4A75-9248-3DDBA94E3D5F}</Project>
-      <Name>NRefactory</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+
 </Project>

@@ -174,7 +174,7 @@ namespace Mono.CSharp
 			return parser;
 		}
 		
-		public static int Main (string[] args)
+		static int CompilerMain (string[] args)
 		{
 			Location.InEmacs = Environment.GetEnvironmentVariable ("EMACS") == "t";
 
@@ -356,7 +356,7 @@ namespace Mono.CSharp
 			if (!ctx.BuiltinTypes.CheckDefinitions (module))
 				return false;
 
-			if (!assembly.Create (AppDomain.CurrentDomain, AssemblyBuilderAccess.Save))
+			// if (!assembly.Create (AppDomain.CurrentDomain, AssemblyBuilderAccess.Save))
 				return false;
 
 			module.CreateContainer ();

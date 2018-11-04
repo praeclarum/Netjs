@@ -694,7 +694,7 @@ namespace Mono.CSharp {
 #if STATIC
 					MethodBuilder.__AddDeclarativeSecurity (de);
 #else
-					MethodBuilder.AddDeclarativeSecurity (de.Key, de.Value);
+					// MethodBuilder.AddDeclarativeSecurity (de.Key, de.Value);
 #endif
 				}
 			}
@@ -1717,7 +1717,7 @@ namespace Mono.CSharp {
 #if STATIC
 					ConstructorBuilder.__AddDeclarativeSecurity (de);
 #else
-					ConstructorBuilder.AddDeclarativeSecurity (de.Key, de.Value);
+					// ConstructorBuilder.AddDeclarativeSecurity (de.Key, de.Value);
 #endif
 				}
 			}
@@ -1776,14 +1776,14 @@ namespace Mono.CSharp {
 			if (debug_builder == null)
 				return;
 
-			var token = ConstructorBuilder.GetToken ();
-			int t = token.Token;
-#if STATIC
-			if (token.IsPseudoToken)
-				t = Module.Builder.ResolvePseudoToken (t);
-#endif
+// 			var token = ConstructorBuilder.GetToken ();
+// 			int t = token.Token;
+// #if STATIC
+// 			if (token.IsPseudoToken)
+// 				t = Module.Builder.ResolvePseudoToken (t);
+// #endif
 
-			debug_builder.DefineMethod (file, t);
+// 			debug_builder.DefineMethod (file, t);
 		}
 
 		#region IMethodData Members
@@ -2117,14 +2117,14 @@ namespace Mono.CSharp {
 			if (debug_builder == null)
 				return;
 
-			var token = builder.GetToken ();
-			int t = token.Token;
-#if STATIC
-			if (token.IsPseudoToken)
-				t = member.Module.Builder.ResolvePseudoToken (t);
-#endif
+// 			var token = builder.GetToken ();
+// 			int t = token.Token;
+// #if STATIC
+// 			if (token.IsPseudoToken)
+// 				t = member.Module.Builder.ResolvePseudoToken (t);
+// #endif
 
-			debug_builder.DefineMethod (file, t);
+// 			debug_builder.DefineMethod (file, t);
 		}
 	}
 
@@ -2372,7 +2372,7 @@ namespace Mono.CSharp {
 #if STATIC
 					method_data.MethodBuilder.__AddDeclarativeSecurity (de);
 #else
-					method_data.MethodBuilder.AddDeclarativeSecurity (de.Key, de.Value);
+					// method_data.MethodBuilder.AddDeclarativeSecurity (de.Key, de.Value);
 #endif
 				}
 			}

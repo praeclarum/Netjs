@@ -205,7 +205,7 @@ namespace Mono.CSharp
 			return builder_extra.AddModule (moduleFile);
 		}
 
-#if !STATIC
+#if HAS_APPDOMAIN
 		public override ModuleBuilder CreateModuleBuilder ()
 		{
 			if (file_name == null)
@@ -219,7 +219,7 @@ namespace Mono.CSharp
 		//
 		public bool Create (AppDomain domain, AssemblyBuilderAccess access)
 		{
-#if STATIC
+#if !HAS_APPDOMAIN
 			throw new NotSupportedException ();
 #else
 			ResolveAssemblySecurityAttributes ();
@@ -261,7 +261,7 @@ namespace Mono.CSharp
 				base.SaveModule (pekind, machine);
 			}
 
-			Builder.Save (file_name, pekind, machine);
+			// Builder.Save (file_name, pekind, machine);
 		}
 #endif
 	}

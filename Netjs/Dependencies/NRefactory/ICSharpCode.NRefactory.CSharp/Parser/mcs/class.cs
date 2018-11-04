@@ -2502,7 +2502,7 @@ namespace Mono.CSharp
 #if STATIC
 					TypeBuilder.__AddDeclarativeSecurity (de);
 #else
-					TypeBuilder.AddDeclarativeSecurity (de.Key, de.Value);
+					// TypeBuilder.AddDeclarativeSecurity (de.Key, de.Value);
 #endif
 				}
 			}

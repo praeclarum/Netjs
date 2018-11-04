@@ -620,7 +620,7 @@ namespace Mono.CSharp
 			AssemblyBuilderAccess access;
 
 			if (Environment.GetEnvironmentVariable ("SAVE") != null) {
-				access = AssemblyBuilderAccess.RunAndSave;
+				access = AssemblyBuilderAccess.Run;
 				assembly = new AssemblyDefinitionDynamic (module, current_debug_name, current_debug_name);
 				assembly.Importer = importer;
 			} else {
@@ -678,7 +678,7 @@ namespace Mono.CSharp
 			if (host != null)
 				host.CloseContainer ();
 
-			if (access == AssemblyBuilderAccess.RunAndSave)
+			if (access == AssemblyBuilderAccess.Run)
 				assembly.Save ();
 
 			if (host == null)

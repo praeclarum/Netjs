@@ -1,43 +1,34 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Netjs", "Netjs\Netjs.csproj", "{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NRefactory", "Dependencies\NRefactory\NRefactory.csproj", "{0709E65F-6943-4A75-9248-3DDBA94E3D5F}"
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26124.0
+MinimumVisualStudioVersion = 15.0.26124.0
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Netjs", "Netjs\Netjs.csproj", "{A463E59F-8FC1-44E3-B0BD-19F18369451F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0709E65F-6943-4A75-9248-3DDBA94E3D5F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0709E65F-6943-4A75-9248-3DDBA94E3D5F}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0709E65F-6943-4A75-9248-3DDBA94E3D5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0709E65F-6943-4A75-9248-3DDBA94E3D5F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DC5B7B7B-6890-45E1-80C6-E1B619BC0150}.Release|Any CPU.Build.0 = Release|Any CPU
-	EndGlobalSection
-	GlobalSection(MonoDevelopProperties) = preSolution
-		StartupItem = Netjs\Netjs.csproj
-		Policies = $0
-		$0.TextStylePolicy = $1
-		$1.inheritsSet = null
-		$1.scope = text/x-csharp
-		$0.CSharpFormattingPolicy = $2
-		$2.IndentSwitchSection = True
-		$2.NewLinesForBracesInProperties = True
-		$2.NewLineForElse = True
-		$2.NewLineForCatch = True
-		$2.NewLineForFinally = True
-		$2.NewLineForMembersInObjectInit = True
-		$2.NewLineForMembersInAnonymousTypes = True
-		$2.NewLineForClausesInQuery = True
-		$2.SpaceBeforeOpenSquareBracket = False
-		$2.inheritsSet = Mono
-		$2.inheritsScope = text/x-csharp
-		$2.scope = text/x-csharp
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Debug|x86.Build.0 = Debug|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|x64.Build.0 = Release|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A463E59F-8FC1-44E3-B0BD-19F18369451F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
