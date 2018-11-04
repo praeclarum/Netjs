@@ -13,7 +13,8 @@
 
   <PropertyGroup>
     <Version>1.0.0</Version>
-    <Description>Compile .NET assemblies to JavaScript</Description>
+    <Authors>praeclarum</Authors>
+    <Description>Compile .NET assemblies to TypeScript and JavaScript</Description>
     <Company>Frank A. Krueger</Company>
     <Copyright>Copyright © Frank A. Krueger</Copyright>
   </PropertyGroup>
