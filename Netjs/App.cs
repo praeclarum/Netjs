@@ -15,6 +15,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using ICSharpCode.Decompiler;
@@ -71,6 +72,9 @@ namespace Netjs
 
 		void Run (Config config)
 		{
+			Stopwatch sw = new Stopwatch ();
+			sw.Start ();
+
 			if (config.AssembliesToDecompile.Count == 0) {
 				config.ShowHelp = true;
 			}
@@ -110,6 +114,7 @@ namespace Netjs
 
 			AssemblyDefinition firstAsm = null;
 			foreach (var asmPath in asmPaths) {
+				Info ("  Reading {0}", asmPath);
 				var asm = AssemblyDefinition.ReadAssembly (asmPath, globalReaderParameters);
 				if (firstAsm == null)
 					firstAsm = asm;
@@ -117,7 +122,7 @@ namespace Netjs
 				decompileAssemblies.Add (asm);
 			}
 
-			Step ("Decompiling IL to C#");
+			Step ("Decompiling IL");
 			var context = new DecompilerContext (firstAsm.MainModule);
 			context.Settings.ForEachStatement = false;
 			context.Settings.ObjectOrCollectionInitializers = false;
@@ -145,16 +150,17 @@ namespace Netjs
 			}
 			builder.RunTransformations ();
 
-			Step ("Translating C# to TypeScript");
+			Step ("Compiling TypeScript");
 			new CsToTs (config.ES3Compatible).Run (builder.SyntaxTree);
 
-			Step ("Writing");
+			Step ("Writing TypeScript");
+			Info ("  Writing {0}", outPath);
 			using (var outputWriter = new StreamWriter (outPath)) {
 				var output = new PlainTextOutput (outputWriter);
 				builder.GenerateCode (output, (s, e) => new TsOutputVisitor (s, e));
 			}
 
-			Step ("Done");
+			Step ("Done in " + sw.Elapsed);
 		}
 
 		#region Logging
@@ -190,6 +196,13 @@ namespace Netjs
 			Console.WriteLine (format, args);
 		}
 
+		public static void InfoDetail (string format, params object[] args)
+		{
+			Console.ForegroundColor = ConsoleColor.DarkGray;
+			Console.WriteLine (format, args);
+			Console.ResetColor ();
+		}
+
 		#endregion
 
 		#region IAssemblyResolver implementation
@@ -221,7 +234,7 @@ namespace Netjs
 						if (x.Item2) {
 							decompileAssemblies.Add (asm);
 						}
-						Info ("    Loaded {0} (decompile={1})", fn, x.Item2);
+						InfoDetail ("    Loaded {0} (decompile={1})", fn, x.Item2);
 						break;
 					}
 				}
