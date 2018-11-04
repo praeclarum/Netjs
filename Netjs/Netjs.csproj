@@ -8,7 +8,7 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <DefineConstants>FULL_AST</DefineConstants>
-    <NoWarn>436, 3021</NoWarn>
+    <NoWarn>436, 618, 3021</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -19,9 +19,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mono.Cecil" Version="0.9.6.4">
-      <NoWarn>NU1701</NoWarn>
-    </PackageReference>
+    <PackageReference Include="Mono.Cecil" Version="0.10.1" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="System.Security.Permissions" Version="4.5.0" />
   </ItemGroup>

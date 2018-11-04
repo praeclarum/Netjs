@@ -332,7 +332,7 @@ namespace ICSharpCode.Decompiler.ILAst
 				if (!byteCode.Code.IsUnconditionalControlFlow()) {
 					if (exceptionHandlerStarts.Contains(byteCode.Next)) {
 						// Do not fall though down to exception handler
-						// It is invalid IL as per ECMA-335 §12.4.2.8.1, but some obfuscators produce it
+						// It is invalid IL as per ECMA-335 ï¿½12.4.2.8.1, but some obfuscators produce it
 					} else {
 						branchTargets.Add(byteCode.Next);
 					}
@@ -539,7 +539,7 @@ namespace ICSharpCode.Decompiler.ILAst
 				if (!optimize || varDef.IsPinned || uses.Any(b => b.VariablesBefore[varDef.Index].UnknownDefinition || (b.Code == ILCode.Ldloca && !IsDeterministicLdloca(b)))) {				
 					newVars = new List<VariableInfo>(1) { new VariableInfo() {
 						Variable = new ILVariable() {
-							Name = string.IsNullOrEmpty(varDef.Name) ? "var_" + varDef.Index : varDef.Name,
+							Name = "var_" + varDef.Index,
 							Type = varDef.IsPinned ? ((PinnedType)varDef.VariableType).ElementType : varDef.VariableType,
 							OriginalVariable = varDef
 						},
@@ -550,7 +550,7 @@ namespace ICSharpCode.Decompiler.ILAst
 					// Create a new variable for each definition
 					newVars = defs.Select(def => new VariableInfo() {
 						Variable = new ILVariable() {
-							Name = (string.IsNullOrEmpty(varDef.Name) ? "var_" + varDef.Index : varDef.Name) + "_" + def.Offset.ToString("X2"),
+							Name = "var_" + varDef.Index + "_" + def.Offset.ToString("X2"),
 							Type = varDef.VariableType,
 							OriginalVariable = varDef
 					    },

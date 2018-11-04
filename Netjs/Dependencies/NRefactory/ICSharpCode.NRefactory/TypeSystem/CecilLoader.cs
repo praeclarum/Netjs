@@ -259,6 +259,8 @@ namespace ICSharpCode.NRefactory.TypeSystem
 				Debug.Assert(assemblyName != null);
 				this.documentationProvider = documentationProvider;
 			}
+
+			public void Dispose () {}
 			
 			DocumentationComment IDocumentationProvider.GetDocumentation(IEntity entity)
 			{
@@ -283,6 +285,8 @@ namespace ICSharpCode.NRefactory.TypeSystem
 		// used to prevent Cecil from loading referenced assemblies
 		sealed class DummyAssemblyResolver : IAssemblyResolver
 		{
+			public void Dispose () {}
+			
 			public AssemblyDefinition Resolve(AssemblyNameReference name)
 			{
 				return null;
@@ -1548,8 +1552,8 @@ namespace ICSharpCode.NRefactory.TypeSystem
 					baseTypes.Add(ReadTypeReference(typeDefinition.BaseType));
 				}
 				if (typeDefinition.HasInterfaces) {
-					foreach (TypeReference iface in typeDefinition.Interfaces) {
-						baseTypes.Add(ReadTypeReference(iface));
+					foreach (var iface in typeDefinition.Interfaces) {
+						baseTypes.Add(ReadTypeReference(iface.InterfaceType));
 					}
 				}
 			}

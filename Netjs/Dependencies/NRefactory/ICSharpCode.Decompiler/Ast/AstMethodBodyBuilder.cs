@@ -1161,7 +1161,7 @@ namespace ICSharpCode.Decompiler.Ast
 			} else if (operand is Cecil.TypeReference) {
 				return ((Cecil.TypeReference)operand).FullName;
 			} else if (operand is VariableDefinition) {
-				return ((VariableDefinition)operand).Name;
+				return "V_" + ((VariableDefinition)operand).Index;
 			} else if (operand is ParameterDefinition) {
 				return ((ParameterDefinition)operand).Name;
 			} else if (operand is FieldReference) {

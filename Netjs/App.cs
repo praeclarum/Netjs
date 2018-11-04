@@ -194,6 +194,8 @@ namespace Netjs
 
 		#region IAssemblyResolver implementation
 
+		public void Dispose () {}
+		
 		readonly ReaderParameters globalReaderParameters = new ReaderParameters ();
 		readonly List<Tuple<string, bool>> asmSearchPaths = new List<Tuple<string, bool>> ();
 		readonly Dictionary<string, AssemblyDefinition> referencedAssemblies = new Dictionary<string, AssemblyDefinition> ();
