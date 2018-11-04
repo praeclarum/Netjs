@@ -4,7 +4,6 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <PackAsTool>true</PackAsTool>
-    <ToolCommandName>netjs</ToolCommandName>
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <DefineConstants>FULL_AST</DefineConstants>
@@ -12,11 +11,15 @@
   </PropertyGroup>
 
   <PropertyGroup>
+    <ToolCommandName>netjs</ToolCommandName>
+    <PackageId>netjs</PackageId>
+    <PackageTags>compiler;typescript;javascript;web;js</PackageTags>
     <Version>1.0.0</Version>
     <Authors>praeclarum</Authors>
     <Description>Compile .NET assemblies to TypeScript and JavaScript</Description>
     <Company>Frank A. Krueger</Company>
     <Copyright>Copyright © Frank A. Krueger</Copyright>
+    <PackageLicenseUrl>https://github.com/praeclarum/Netjs/blob/master/LICENSE.txt</PackageLicenseUrl>
   </PropertyGroup>
 
   <ItemGroup>
