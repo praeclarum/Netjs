@@ -8,6 +8,7 @@
     <PackageOutputPath>$(OutDir)</PackageOutputPath>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <DefineConstants>FULL_AST</DefineConstants>
+    <NoWarn>436, 3021</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
