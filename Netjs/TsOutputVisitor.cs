@@ -427,14 +427,14 @@ namespace Netjs
 		static readonly HashSet<string> unconditionalKeywords = new HashSet<string> {
 			"super", "boolean", "break", "case", "catch",
 			"class", "const", "continue", "default", "function",
-			"do", "else", "enum", "false",
+			"do", "else", "enum", "eval", "false",
 			"finally", "for", "goto", "if",
-			"in", "interface", "instanceof", "module",
+			"in", "interface", "instanceof", "let", "module",
 			"new", "null", "object", "private",
 			"public", "return",
 			"static", "string", "switch", "this", "throw",
 			"true", "try", "typeof",
-			"using", "void", "while",
+			"using", "var", "void", "while",
 			// closure thinks these are reserved
 			"int", "expression",
 		};

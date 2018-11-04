@@ -29,9 +29,11 @@ namespace Netjs
 		class Config
 		{
 			public List<string> AssembliesToDecompile = new List<string> ();
+			public List<string> ScriptsToLink = new List<string> ();
 			public bool ShowHelp = false;
 			public bool ES3Compatible = false;
 			public bool IncludeRefs = false;
+			public string OutputJsPath = null;
 		}
 
 		public static int Main (string[] args)
@@ -50,27 +52,34 @@ namespace Netjs
 					case "/?":
 						config.ShowHelp = true;
 						break;
-				case "--es3":
-				case "-es3":
-					config.ES3Compatible = true;
-					break;
+					case "--es3":
+						config.ES3Compatible = true;
+						break;
+					case "--outjs":
+					case "-j" when i + 1 < args.Length:
+						config.OutputJsPath = args[i+1];
+						i++;
+						break;
 					default:
 						if (!a.StartsWith ("-")) {
-							config.AssembliesToDecompile.Add (a);
+							var ext = Path.GetExtension (a).ToLowerInvariant ();
+							if (ext == ".dll" || ext == ".exe")
+								config.AssembliesToDecompile.Add (a);
+							else if (ext == ".js" || ext == ".ts")
+								config.ScriptsToLink.Add (a);
 						}
 						break;
 				}
 			}
 			try {
-				new App ().Run (config);
-				return 0;
+				return new App ().Run (config);
 			} catch (Exception ex) {
 				Error ("{0}", ex);
 				return 1;
 			}
 		}
 
-		void Run (Config config)
+		int Run (Config config)
 		{
 			Stopwatch sw = new Stopwatch ();
 			sw.Start ();
@@ -81,10 +90,20 @@ namespace Netjs
 
 			if (config.ShowHelp) {
 				Console.WriteLine ($"Netjs compiler, Copyright 2014-{DateTime.Now.Year} Frank A. Krueger");
-				Console.WriteLine ("netjs [options] assembly-files");
+				Console.WriteLine ("Compiles .NET assemblies to TypeScript and JavaScript");
+				Console.WriteLine ();
+				Console.WriteLine ("Syntax: netjs [options] assemblies [scripts]");
+				Console.WriteLine ();
+				Console.WriteLine ("Examples: netjs App.exe");
+				Console.WriteLine ("          netjs --outjs app.js App.exe ads.ts");
+				Console.WriteLine ();
+				Console.WriteLine ("Options:");
+				Console.WriteLine ("   --es3                Output ECMAScript 3 compatible code");
 				Console.WriteLine ("   --help, -h           Show usage information");
 				Console.WriteLine ("   --includerefs, -r    Decompile referenced assemblies");
-				return;
+				Console.WriteLine ("   --outjs, -j FILE     Output JavaScript to FILE by linking the generated TypeScript and");
+				Console.WriteLine ("                        and other .js and .ts scripts given on the command line");
+				return 2;
 			}
 
 			string outPath = "";
@@ -160,7 +179,25 @@ namespace Netjs
 				builder.GenerateCode (output, (s, e) => new TsOutputVisitor (s, e));
 			}
 
+			if (!string.IsNullOrEmpty (config.OutputJsPath)) {
+				Step ("Compiling JavaScript");
+				var tscArgs = new List<string> {
+					"--allowJs",
+					"-t",
+					config.ES3Compatible ? "ES3" : "ES5",
+					"--outFile",
+					config.OutputJsPath,
+					outPath,
+				};
+				var tscStartInfo = new ProcessStartInfo ("tsc", string.Join (" ", tscArgs.Select (x => $"\"{x}\"")));
+				var tscProcess = Process.Start (tscStartInfo);
+				tscProcess.WaitForExit ();
+				Error ("Failed to compile JavaScript");
+				return 3;
+			}
+
 			Step ("Done in " + sw.Elapsed);
+			return 0;
 		}
 
 		#region Logging
