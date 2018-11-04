@@ -1,58 +1,51 @@
 # Netjs
 
+[![Build Status](https://app.bitrise.io/app/fa94597fdbce95b1/status.svg?token=LNyVUJAH3rRjRIbtl0pvng)](https://app.bitrise.io/app/fa94597fdbce95b1)
+
 Netjs is a .NET to TypeScript and JavaScript compiler. It uses multiple stages to produce JavaScript for your web apps.
 
 <img src="Images/Explanation.png" />
 
 You start by compiling whatever code you want into its own assembly. Portable Class Libraries work great for this, but it really doesn't matter. You can even pass EXEs.
 
-    netjs Library.dll
+```bash
+netjs Library.dll
+```
 
 This produces a TypeScript file. You can use this file as is if the rest of your app is written in TypeScript.
 
 If you want JavaScript (with no dependencies), then pass this file along with a tiny mscorlib to the TypeScript compiler:
 
-    tsc -t ES5 mscorlib.ts Library.ts --out Library.js
+```bash
+tsc -t ES5 mscorlib.ts Library.ts --out Library.js
+```
 
 You can now include Library.js in any app because it is fully linked (you will get build errors if anything is missing).
 
-    <script src="Library.js" type="text/javascript"></script>
+```html
+<script src="Library.js" type="text/javascript"></script>
+```
 
 And that's it. You can write apps and reuse the portable parts in web apps!
 
 
 ## Installation
 
-### Install Netjs
-
-Download it:
-
-    git clone https://github.com/praeclarum/Netjs.git
-
-#### Mac
-
-    sudo make install
-
-This will install a soft link called `netjs` in `/usr/bin` to the script `netjs.sh`.
-
-#### Windows
-
-    msbuild
-
-`Netjs.exe` will be built in `Netjs\bin\Debug`. You can copy this executable to someplace in your PATH to make it readily available.
-
+```bash
+dotnet install tool -g Netjs
+```
 
 ### Install Node
 
 [http://nodejs.org/download/](http://nodejs.org/download/)
 
-Node is needed by the TypeScript compiler.
-
 ### Install TypeScript
 
-    sudo npm install -g typescript
+[Node](http://nodejs.org/download/) is needed by the TypeScript compiler.
 
-
+```bash
+sudo npm install -g typescript
+```
 
 
 ## Compiling Code
@@ -61,13 +54,17 @@ Netjs works with .NET assemblies built with any compiler ([limitations][Limitati
 
 ### Compile to TypeScript
 
-    netjs Library.dll
+```bash
+netjs Library.dll
+```
 
 This will output a TypeScript file named `Library.ts` containing all the code from `Library.dll` and any other assemblies referenced in its directory.
 
 ### Compile to JavaScript
 
-    tsc -t ES5 mscorlib.ts Library.ts --out Library.js 
+```
+tsc -t ES5 mscorlib.ts Library.ts --out Library.js
+```
 
 This compiles the library code along with a small implementation of mscorlib. The files are merged and output as a single JavaScript file `Library.js`.
 
@@ -76,19 +73,23 @@ This compiles the library code along with a small implementation of mscorlib. Th
 In case you need your code to run in es3 environment (like, well, IE8), you have to get rid of accessors as they are not supported.
 Passing `--es3` as an argument would result in creating of getter/setter methods instead of fields with accessors.
 
-    netjs Library.dll --es3
+```
+netjs Library.dll --es3
+```
     
 Library.dll:
 
-    class Person
+```csharp
+class Person
+{
+    private string name;
+    public string Name
     {
-        private string name;
-        public string Name
-        {
-            get { return name; }
-            set { name = value; }
-        }
+        get { return name; }
+        set { name = value; }
     }
+}
+```
 
 Library.ts:
 
