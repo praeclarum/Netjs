@@ -2395,6 +2395,11 @@ namespace Netjs
 				if (n != o) {
 					identifier.Name = n;
 				}
+				else {
+					if (o == "arguments") {
+						identifier.Name = "$arguments";
+					}
+				}
 			}
 		}
 
