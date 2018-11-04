@@ -32,16 +32,14 @@ And that's it. You can write apps and reuse the portable parts in web apps!
 ## Installation
 
 ```bash
-dotnet install tool -g Netjs
+dotnet tool install -g netjs
 ```
-
-### Install Node
-
-[http://nodejs.org/download/](http://nodejs.org/download/)
 
 ### Install TypeScript
 
-[Node](http://nodejs.org/download/) is needed by the TypeScript compiler.
+The TypeScript compiler is needed to convert from TypeScript files to JavaScript.
+
+First, install [Node](http://nodejs.org/download/).
 
 ```bash
 sudo npm install -g typescript
@@ -93,22 +91,26 @@ class Person
 
 Library.ts:
 
-    class Person extends NObject
+```csharp
+class Person extends NObject
+{
+    name: string;
+    SetName(value: string): void
     {
-        name: string;
-        SetName(value: string): void
-        {
-            this.name = value;
-        }
-        GetName(): string
-        {
-            return this.name;
-        }
+        this.name = value;
     }
+    GetName(): string
+    {
+        return this.name;
+    }
+}
+```
 
 And then compile TypeScript for ES3. Also use es3 compatible mscorlib.
 
-    tsc -t ES3 mscorlib.es3.ts Library.ts --out Library.js
+```bash
+tsc -t ES3 mscorlib.es3.ts Library.ts --out Library.js
+```
 
 Since all the references and assignments of all fields with accessors, including native ones, are replaced with methods invocations, you have to provide a corresponding implementation. In `mscorlib.es3.ts` all accessors are replaced with getter/setter methods.
 
@@ -125,37 +127,41 @@ Well, that's almost true - JavaScript's idioms don't exactly match .NET's. Howev
 
 When I declare a class with properties in C#,
 
-    class Person {
-        public DateTime DateOfBirth { get; set; }
-        public int Age {
-            get {
-                var now = DateTime.Now;
-                return (new DateTime (dob.Year,now.Month,now.Day) >= dob) ? 
-                    now.Year - dob.Year : 
-                    now.Year - dob.Year - 1;
-            }
+```csharp
+class Person {
+    public DateTime DateOfBirth { get; set; }
+    public int Age {
+        get {
+            var now = DateTime.Now;
+            return (new DateTime (dob.Year,now.Month,now.Day) >= dob) ? 
+                now.Year - dob.Year : 
+                now.Year - dob.Year - 1;
         }
     }
+}
+```
 
 The code generated should be idiomatic JavaScript. And it is:
 
-    var Person = (function (_super) {
-        __extends(Person, _super);
-        function Person() {
-            _super.call(this);
-            this.DateOfBirth = null;
-        }
-        Object.defineProperty(Person.prototype, "Age", {
-            get: function () {
-                var now = DateTime.Now;
-                var flag = DateTime.op_GreaterThanOrEqual(new DateTime(this.DateOfBirth.Year, now.Month, now.Day), this.DateOfBirth);
-                return (!flag) ? (now.Year - this.DateOfBirth.Year - 1) : (now.Year - this.DateOfBirth.Year);
-            },
-            enumerable: true,
-            configurable: true
-        });
-        return Person;
-    })(NObject);
+```csharp
+var Person = (function (_super) {
+    __extends(Person, _super);
+    function Person() {
+        _super.call(this);
+        this.DateOfBirth = null;
+    }
+    Object.defineProperty(Person.prototype, "Age", {
+        get: function () {
+            var now = DateTime.Now;
+            var flag = DateTime.op_GreaterThanOrEqual(new DateTime(this.DateOfBirth.Year, now.Month, now.Day), this.DateOfBirth);
+            return (!flag) ? (now.Year - this.DateOfBirth.Year - 1) : (now.Year - this.DateOfBirth.Year);
+        },
+        enumerable: true,
+        configurable: true
+    });
+    return Person;
+})(NObject);
+```
 
 There's a tiny wrapper placed around the class definition that is typical of JavaScript code avoiding name conflicts. There is the use of a tiny `__extends` function that establishes a class hierarchy using JavaScript's prototype chain. The rest is standard JavaScript.
 
@@ -163,12 +169,13 @@ I want to make life easier for the machine by generating clean idiomatic code, b
 
 When it comes time to use the Person class from JavaScript, that code should also be clean and idiomatic:
 
-    <script>
-        var p = new Person();
-        p.DateOfBirth = new DateTime(1980, 7, 23);
-        document.getElementById("age").textContent = p.Age;
-    </script>
-
+```html
+<script>
+    var p = new Person();
+    p.DateOfBirth = new DateTime(1980, 7, 23);
+    document.getElementById("age").textContent = p.Age;
+</script>
+```
 
 
 
