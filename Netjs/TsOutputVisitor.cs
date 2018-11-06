@@ -426,7 +426,7 @@ namespace Netjs
 		#region IsKeyword Test
 		static readonly HashSet<string> unconditionalKeywords = new HashSet<string> {
 			"super", "boolean", "break", "case", "catch",
-			"class", "const", "continue", "default", "function",
+			"class", "const", "continue", "default", "delete", "function",
 			"do", "else", "enum", "eval", "false",
 			"finally", "for", "goto", "if",
 			"in", "interface", "instanceof", "let", "module",
