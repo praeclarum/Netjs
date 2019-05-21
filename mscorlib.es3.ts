@@ -1000,7 +1000,7 @@ class Dictionary<K, V> extends NObject implements IDictionary<K, V>, IEnumerable
 	{
 		var ks = this.GetKeyString (key);
 		if (this.values.hasOwnProperty(ks)) {
-			throw new InvalidOperationException ();
+			throw new InvalidOperationException (`This key ${key} already exists`);
 		}
 		else {
 			this.keys[ks] = key;
