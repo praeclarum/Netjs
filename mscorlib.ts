@@ -138,6 +138,14 @@ class NArray
 	{
 		return array.filter(predicate);
 	}
+	static Exists<T>(array: T[], predicate: (T) => boolean): boolean
+	{
+		return array.some(predicate);
+	}
+	static Sort<T>(array: T[], comparer: (T) => number): void
+	{
+		array.sort(comparer);
+	}
 }
 
 class NNumber
@@ -163,7 +171,7 @@ class NNumber
 	}
 	static IsInfinity(num: number): boolean
 	{
-		return num === Infinity;
+		return Math.abs(num) === Infinity;
 	}
 	static TryParse(str: string, pvalue: number[]): boolean
 	{
@@ -186,7 +194,8 @@ class NBoolean
 {
 	static TryParse(str: string, pbool: boolean[]): boolean
 	{
-		throw new NotImplementedException;
+		str = str.trim();
+		return /true/i.test(str);
 	}
 	static GetHashCode(bool: boolean): number
 	{
@@ -368,7 +377,7 @@ class NString
 	}
 	static Concat(parts: any[]): string
 	{
-		throw new NotImplementedException();
+		return parts.join('');
 	}
 
 	static FromChars(ch: number, count: number): string
@@ -422,15 +431,15 @@ class NMath extends NObject
 	}
 	static Cosh (x: number): number
 	{
-		throw new NotImplementedException ();
+		return Math.cosh(x);
 	}
 	static Sinh (x: number): number
 	{
-		throw new NotImplementedException ();
+		return Math.sinh(x);
 	}
 	static Tanh (x: number): number
 	{
-		throw new NotImplementedException ();
+		return Math.tanh(x);
 	}
 }
 
@@ -815,7 +824,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	RemoveRange(index: number, count: number): void
 	{
-		throw new NotImplementedException ();
+		this.array.splice(index, count);
 	}
 
 	Insert(index: number, item: T): void
@@ -857,7 +866,7 @@ class List<T> extends NObject implements IList<T>, IEnumerable<T>
 
 	Reverse(): void
 	{
-		throw new NotImplementedException ();
+		this.array.reverse();
 	}
 
 	IndexOf(item: T): number
@@ -924,7 +933,7 @@ class Stack<T> extends List<T>
 	}
 	Pop(): T
 	{
-		throw new NotImplementedException ();
+		return this.array.pop();
 	}
 }
 
